@@ -1,11 +1,44 @@
 # MERIDIAN · Data Analyst Template
 
+> **Private repository** — full source code. A public mirror lives at [`demoanalytics`](https://github.com/) for preview purposes.
+
 A production-grade, full-stack data analyst dashboard template for capital-markets-scale analytics. Built around a synthetic tick lakehouse (the kind of platform that ingests 100B+ events/day from exchange feeds and serves real-time risk, post-trade, and research workloads simultaneously).
 
 This repository is both:
 
 1. **A working template** — clone, run, and you have a real data analyst dashboard with synthetic data, real API routes, charts, tables, SQL editor, lineage graph, and SLO monitoring.
 2. **A reference architecture** — every component mirrors a real production pattern (cell-based isolation, exactly-once semantics, three-tier SLOs, OPA-governed lineage).
+
+---
+
+## Dual-repo setup
+
+This template uses a **private/public mirror** pattern:
+
+| Repository | Visibility | Purpose |
+|-----------|-----------|---------|
+| **`dataanalysistemplate`** (this repo) | **Private** | Full source code with backend, Prisma, API routes, synthetic seeder, tests |
+| **`demoanalytics`** | **Public** | Mirror of the source, deployed to GitHub Pages for no-NDA preview |
+
+The public repo contains the same code plus a GitHub Actions workflow (`.github/workflows/deploy.yml`) that builds a static export and deploys it to GitHub Pages on every push to `main`.
+
+To sync from private → public:
+
+```bash
+# First time: clone the public repo as a sibling directory
+cd ..
+git clone git@github.com:<you>/demoanalytics.git
+cd dataanalysistemplate
+
+# Sync (copies tracked files, commits, and pushes)
+./scripts/sync-to-public.sh ../demoanalytics
+```
+
+The sync script:
+- Uses `git archive` to export only tracked files (respects `.gitignore`)
+- Skips `.git`, `node_modules`, `.next`, `dev.log`, `db/`, `.env`, `skills/`, `tests/`
+- Commits with a message referencing the source commit hash
+- Pushes to `origin main` on the public repo
 
 ---
 

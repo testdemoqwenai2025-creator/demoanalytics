@@ -11,7 +11,6 @@ import { ModelsSection } from '@/components/dashboard/sections/models'
 import { AlertsSection } from '@/components/dashboard/sections/alerts'
 import { GovernanceSection } from '@/components/dashboard/sections/governance'
 import { IncidentsSection } from '@/components/dashboard/sections/incidents'
-import { Skeleton } from '@/components/ui/skeleton'
 
 const SECTIONS = {
   overview: OverviewSection,
@@ -27,12 +26,10 @@ const SECTIONS = {
 
 export function DashboardShell() {
   const active = useDashboardStore(s => s.activeSection)
-  const refreshKey = useDashboardStore(s => s.refreshKey)
-
   const Section = SECTIONS[active] ?? OverviewSection
 
   return (
-    <div className="space-y-6 animate-in fade-in-50 duration-200" key={`${active}-${refreshKey}`}>
+    <div className="space-y-6 animate-in fade-in-50 duration-200">
       <Section />
     </div>
   )
