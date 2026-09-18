@@ -64,6 +64,7 @@ rsync -av --delete --exclude='.git' \
   --exclude='dev.log' \
   --exclude='server.log' \
   --exclude='db/' \
+  --exclude='db.ts' \
   --exclude='.env' \
   --exclude='.env.local' \
   --exclude='tool-results/' \

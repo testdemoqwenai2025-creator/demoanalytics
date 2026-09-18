@@ -1,19 +1,24 @@
 import { create } from 'zustand'
 
-export type PageId =
-  | 'home' | 'dashboard' | 'markets' | 'automate'
-  | 'about' | 'docs' | 'login'
-
 export type DashboardSectionId =
   | 'overview' | 'datasets' | 'explorer' | 'pipelines' | 'ticks'
   | 'models' | 'alerts' | 'governance' | 'incidents'
 
-interface DashboardState {
-  // Top-level page routing
-  activePage: PageId
-  setActivePage: (p: PageId) => void
+interface ApiKeyStore {
+  coingecko: string
+  alphavantage: string
+  finnhub: string
+  newsapi: string
+  rss2json: string
+}
 
-  // Dashboard section (within dashboard page)
+interface ApiUsageEntry {
+  provider: string
+  timestamp: number
+}
+
+interface DashboardState {
+  // Dashboard sub-section (tabs within /dashboard)
   activeSection: DashboardSectionId
   setActiveSection: (s: DashboardSectionId) => void
 
@@ -21,49 +26,83 @@ interface DashboardState {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
 
-  // Mock auth (persisted to localStorage so it survives page reloads)
+  // Mock auth (persisted to localStorage)
   isAuthenticated: boolean
   userEmail: string | null
   login: (email: string) => void
   logout: () => void
+
+  // API keys (persisted to localStorage, never transmitted except to provider)
+  apiKeys: ApiKeyStore
+  setApiKey: (provider: keyof ApiKeyStore, key: string) => void
+
+  // API usage tracking (per-provider call counter)
+  usageLog: ApiUsageEntry[]
+  recordApiCall: (provider: string) => void
+  getUsage: (provider: string, windowMs: number) => number
+  clearUsage: () => void
 
   // Refresh signal
   refreshKey: number
   triggerRefresh: () => void
 }
 
-// Hydrate auth from localStorage (so static export can persist across reloads)
-const STORAGE_KEY = 'meridian-mock-auth'
+// ──────────────────────────────────────────────────────────────
+// localStorage persistence helpers
+// ──────────────────────────────────────────────────────────────
+
+const AUTH_KEY = 'meridian-mock-auth'
+const API_KEYS_KEY = 'meridian-api-keys'
+const USAGE_KEY = 'meridian-api-usage'
+
 function loadAuth(): { isAuthenticated: boolean; userEmail: string | null } {
   if (typeof window === 'undefined') return { isAuthenticated: false, userEmail: null }
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
+    const raw = window.localStorage.getItem(AUTH_KEY)
     if (!raw) return { isAuthenticated: false, userEmail: null }
     const parsed = JSON.parse(raw)
-    return {
-      isAuthenticated: Boolean(parsed.isAuthenticated),
-      userEmail: parsed.userEmail || null,
-    }
-  } catch {
-    return { isAuthenticated: false, userEmail: null }
-  }
+    return { isAuthenticated: Boolean(parsed.isAuthenticated), userEmail: parsed.userEmail || null }
+  } catch { return { isAuthenticated: false, userEmail: null } }
 }
 
 function saveAuth(isAuthenticated: boolean, userEmail: string | null) {
   if (typeof window === 'undefined') return
+  try { window.localStorage.setItem(AUTH_KEY, JSON.stringify({ isAuthenticated, userEmail })) } catch {}
+}
+
+function loadApiKeys(): ApiKeyStore {
+  if (typeof window === 'undefined') return { coingecko: '', alphavantage: '', finnhub: '', newsapi: '', rss2json: '' }
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ isAuthenticated, userEmail }))
-  } catch {
-    // localStorage might be unavailable in some browsers / sandboxed iframes
-  }
+    const raw = window.localStorage.getItem(API_KEYS_KEY)
+    if (!raw) return { coingecko: '', alphavantage: '', finnhub: '', newsapi: '', rss2json: '' }
+    return JSON.parse(raw)
+  } catch { return { coingecko: '', alphavantage: '', finnhub: '', newsapi: '', rss2json: '' } }
+}
+
+function saveApiKeys(keys: ApiKeyStore) {
+  if (typeof window === 'undefined') return
+  try { window.localStorage.setItem(API_KEYS_KEY, JSON.stringify(keys)) } catch {}
+}
+
+function loadUsage(): ApiUsageEntry[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(USAGE_KEY)
+    if (!raw) return []
+    return JSON.parse(raw)
+  } catch { return [] }
+}
+
+function saveUsage(log: ApiUsageEntry[]) {
+  if (typeof window === 'undefined') return
+  try { window.localStorage.setItem(USAGE_KEY, JSON.stringify(log.slice(-1000))) } catch {}
 }
 
 const initialAuth = loadAuth()
+const initialApiKeys = loadApiKeys()
+const initialUsage = loadUsage()
 
-export const useDashboardStore = create<DashboardState>((set) => ({
-  activePage: 'home',
-  setActivePage: (p) => set({ activePage: p, sidebarOpen: false }),
-
+export const useDashboardStore = create<DashboardState>((set, get) => ({
   activeSection: 'overview',
   setActiveSection: (s) => set({ activeSection: s }),
 
@@ -78,7 +117,32 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   },
   logout: () => {
     saveAuth(false, null)
-    set({ isAuthenticated: false, userEmail: null, activePage: 'home' })
+    set({ isAuthenticated: false, userEmail: null })
+  },
+
+  apiKeys: initialApiKeys,
+  setApiKey: (provider, key) => {
+    const newKeys = { ...get().apiKeys, [provider]: key }
+    saveApiKeys(newKeys)
+    set({ apiKeys: newKeys })
+  },
+
+  usageLog: initialUsage,
+  recordApiCall: (provider) => {
+    const entry = { provider, timestamp: Date.now() }
+    const newLog = [...get().usageLog, entry]
+    saveUsage(newLog)
+    set({ usageLog: newLog })
+  },
+  getUsage: (provider, windowMs) => {
+    const now = Date.now()
+    return get().usageLog.filter(
+      e => e.provider === provider && now - e.timestamp < windowMs
+    ).length
+  },
+  clearUsage: () => {
+    saveUsage([])
+    set({ usageLog: [] })
   },
 
   refreshKey: 0,

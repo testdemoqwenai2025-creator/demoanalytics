@@ -1,12 +1,10 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import { Github, Shield, Heart } from 'lucide-react'
-import { useDashboardStore } from '@/lib/store'
 
-export function Footer() {
-  const setActivePage = useDashboardStore(s => s.setActivePage)
-
+export function SiteFooter() {
   return (
     <footer className="border-t bg-muted/30 mt-auto">
       <div className="container mx-auto max-w-7xl px-4 md:px-6 py-8">
@@ -29,26 +27,12 @@ export function Footer() {
           <div>
             <h3 className="text-xs uppercase tracking-wider font-semibold mb-3">Explore</h3>
             <ul className="space-y-1.5 text-xs">
-              <li>
-                <button onClick={() => setActivePage('home')} className="text-muted-foreground hover:text-foreground">
-                  Home
-                </button>
-              </li>
-              <li>
-                <button onClick={() => setActivePage('dashboard')} className="text-muted-foreground hover:text-foreground">
-                  Dashboard
-                </button>
-              </li>
-              <li>
-                <button onClick={() => setActivePage('markets')} className="text-muted-foreground hover:text-foreground">
-                  Live Markets
-                </button>
-              </li>
-              <li>
-                <button onClick={() => setActivePage('automate')} className="text-muted-foreground hover:text-foreground">
-                  Automation
-                </button>
-              </li>
+              <li><Link href="/" className="text-muted-foreground hover:text-foreground">Home</Link></li>
+              <li><Link href="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link></li>
+              <li><Link href="/markets" className="text-muted-foreground hover:text-foreground">Live Markets</Link></li>
+              <li><Link href="/news" className="text-muted-foreground hover:text-foreground">News Feeds</Link></li>
+              <li><Link href="/files" className="text-muted-foreground hover:text-foreground">Files</Link></li>
+              <li><Link href="/automate" className="text-muted-foreground hover:text-foreground">Automation</Link></li>
             </ul>
           </div>
 
@@ -56,24 +40,14 @@ export function Footer() {
           <div>
             <h3 className="text-xs uppercase tracking-wider font-semibold mb-3">Resources</h3>
             <ul className="space-y-1.5 text-xs">
-              <li>
-                <button onClick={() => setActivePage('about')} className="text-muted-foreground hover:text-foreground">
-                  About
-                </button>
-              </li>
-              <li>
-                <button onClick={() => setActivePage('docs')} className="text-muted-foreground hover:text-foreground">
-                  Documentation
-                </button>
-              </li>
-              <li>
-                <button onClick={() => setActivePage('login')} className="text-muted-foreground hover:text-foreground">
-                  Login
-                </button>
-              </li>
+              <li><Link href="/about" className="text-muted-foreground hover:text-foreground">About</Link></li>
+              <li><Link href="/docs" className="text-muted-foreground hover:text-foreground">Documentation</Link></li>
+              <li><Link href="/pricing" className="text-muted-foreground hover:text-foreground">Pricing &amp; Limits</Link></li>
+              <li><Link href="/settings" className="text-muted-foreground hover:text-foreground">Settings</Link></li>
+              <li><Link href="/login" className="text-muted-foreground hover:text-foreground">Login</Link></li>
               <li>
                 <a
-                  href="https://github.com"
+                  href="https://github.com/testdemoqwenai2025-creator/demoanalytics"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
@@ -96,12 +70,9 @@ export function Footer() {
               trackers. All dashboard data is synthetic or fetched client-side from free
               public APIs. Login is mock-only &mdash; no credentials are transmitted or stored.
             </p>
-            <button
-              onClick={() => setActivePage('about')}
-              className="text-[11px] text-primary hover:underline mt-2"
-            >
+            <Link href="/about" className="text-[11px] text-primary hover:underline mt-2 inline-block">
               Read full privacy notice &rarr;
-            </button>
+            </Link>
           </div>
         </div>
 

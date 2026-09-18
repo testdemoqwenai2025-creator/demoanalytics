@@ -1,9 +1,10 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { LogIn, Mail, Lock, Eye, EyeOff, Github, ArrowRight } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,7 +22,7 @@ export function LoginPage() {
   const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({})
 
   const login = useDashboardStore(s => s.login)
-  const setActivePage = useDashboardStore(s => s.setActivePage)
+  const router = useRouter()
 
   const validate = () => {
     const e: typeof errors = {}
@@ -37,14 +38,13 @@ export function LoginPage() {
     ev.preventDefault()
     if (!validate()) return
     setLoading(true)
-    // Mock auth — pretend to call /api/auth/login
     await new Promise(r => setTimeout(r, 800))
     login(email)
     setLoading(false)
     toast.success('Logged in (mock auth)', {
       description: `Welcome, ${email}. No credentials were transmitted or stored.`,
     })
-    setActivePage('dashboard')
+    router.push('/dashboard')
   }
 
   return (
@@ -55,9 +55,7 @@ export function LoginPage() {
             <LogIn className="h-5 w-5" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-          <p className="text-sm text-muted-foreground">
-            Mock authentication &mdash; nothing is sent or stored.
-          </p>
+          <p className="text-sm text-muted-foreground">Mock authentication &mdash; nothing is sent or stored.</p>
         </div>
 
         <Card>
@@ -67,63 +65,37 @@ export function LoginPage() {
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="analyst@example.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="pl-9"
-                    autoComplete="email"
-                  />
+                  <Input id="email" type="email" placeholder="analyst@example.com" value={email}
+                    onChange={e => setEmail(e.target.value)} className="pl-9" autoComplete="email" />
                 </div>
-                {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email}</p>
-                )}
+                {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => toast.info('Password reset is not implemented in the mock template.')}
-                  >
+                  <button type="button" className="text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => toast.info('Password reset is not implemented in the mock template.')}>
                     Forgot?
                   </button>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="pl-9 pr-10"
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(s => !s)}
+                  <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••"
+                    value={password} onChange={e => setPassword(e.target.value)} className="pl-9 pr-10"
+                    autoComplete="current-password" />
+                  <button type="button" onClick={() => setShowPassword(s => !s)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}>
                     {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                   </button>
                 </div>
-                {errors.password && (
-                  <p className="text-xs text-destructive">{errors.password}</p>
-                )}
+                {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
               </div>
 
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="remember"
-                  checked={remember}
-                  onCheckedChange={(v) => setRemember(Boolean(v))}
-                />
+                <Checkbox id="remember" checked={remember}
+                  onCheckedChange={(v) => setRemember(Boolean(v))} />
                 <Label htmlFor="remember" className="text-xs font-normal cursor-pointer">
                   Keep me signed in (mock &mdash; persists in browser session only)
                 </Label>
@@ -135,32 +107,23 @@ export function LoginPage() {
               </Button>
 
               <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-card px-2 text-muted-foreground">or continue with</span>
                 </div>
               </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => toast.info('GitHub OAuth is a stub in the mock template.')}
-              >
-                <Github className="h-3.5 w-3.5 mr-2" />
-                GitHub
+              <Button type="button" variant="outline" className="w-full"
+                onClick={() => toast.info('GitHub OAuth is a stub in the mock template.')}>
+                <Github className="h-3.5 w-3.5 mr-2" /> GitHub
               </Button>
             </form>
 
             <p className="mt-4 text-center text-xs text-muted-foreground">
               No account?{' '}
-              <button
-                type="button"
+              <button type="button"
                 onClick={() => toast.info('Sign-up is not implemented in the mock template.')}
-                className="text-foreground font-medium hover:underline"
-              >
+                className="text-foreground font-medium hover:underline">
                 Create one
               </button>
             </p>
@@ -175,12 +138,9 @@ export function LoginPage() {
         </div>
 
         <div className="text-center">
-          <button
-            onClick={() => setActivePage('home')}
-            className="text-xs text-muted-foreground hover:text-foreground"
-          >
+          <Link href="/" className="text-xs text-muted-foreground hover:text-foreground">
             &larr; Back to home
-          </button>
+          </Link>
         </div>
       </div>
     </div>

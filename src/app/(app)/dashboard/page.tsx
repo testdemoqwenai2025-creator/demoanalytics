@@ -5,7 +5,7 @@ import { useDashboardStore } from '@/lib/store'
 import { DashboardShell } from '@/components/dashboard/dashboard-shell'
 import { SectionHeading } from '@/components/dashboard/primitives'
 
-export function DashboardPage() {
+export default function DashboardPage() {
   const refreshKey = useDashboardStore(s => s.refreshKey)
   return (
     <div className="space-y-6">
