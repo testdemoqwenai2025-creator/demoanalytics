@@ -7,7 +7,7 @@ import {
   Home, LayoutDashboard, TrendingUp, Zap, Book, Info, LogIn,
   ChevronRight, Database, Workflow, Activity, Brain, Bell, ShieldAlert, GitBranch,
   FileText, DollarSign, Settings, Newspaper, FolderOpen, Sparkles, Puzzle,
-  Radio, FileSpreadsheet, Layout, Filter, MessageSquare, BarChart3,
+  Radio, FileSpreadsheet, Layout, Filter, MessageSquare, BarChart3, Code2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useDashboardStore, type DashboardSectionId } from '@/lib/store'
@@ -35,6 +35,8 @@ const TOP_NAV: NavItem[] = [
   { href: '/automate',      label: 'Automation',    icon: Zap,             description: 'Rules & scheduled jobs' },
   { href: '/notifications', label: 'Notifications', icon: MessageSquare,   description: 'Email + webhooks' },
   { href: '/pricing',       label: 'Pricing & Limits', icon: DollarSign,   description: 'Free tier + upgrade' },
+  { href: '/connectors',    label: 'Connectors',     icon: Database,        description: '18 data source providers' },
+  { href: '/components',    label: 'UI Components',  icon: Code2,           description: 'Reusable building blocks' },
   { href: '/settings',      label: 'Settings',      icon: Settings,        description: 'API keys & preferences' },
 ]
 

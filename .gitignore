@@ -73,3 +73,5 @@ skills/
 # tests (sandbox-only)
 /tests/
 
+mini-services/tick-service/node_modules/
+mini-services/tick-service/bun.lock
