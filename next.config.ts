@@ -11,39 +11,22 @@ import type { NextConfig } from "next";
 // 2. Static export for GitHub Pages (public repo `demoanalytics`):
 //    Set NEXT_PUBLIC_STATIC_EXPORT=1 in the build env to enable `output: 'export'`.
 //    The export produces a static site that can be hosted on GitHub Pages.
-//    In this mode, API routes don't run; the markets page falls back to
-//    client-side fetching directly from public APIs.
 //
-// basePath is set automatically when NEXT_PUBLIC_BASE_PATH is provided
-// (e.g. NEXT_PUBLIC_BASE_PATH=/demoanalytics for GitHub Pages project sites).
+// basePath is required for GitHub Pages project sites (https://<user>.github.io/<repo>/).
+// Set NEXT_PUBLIC_BASE_PATH=/demoanalytics in the build env.
+//
+// Example for the testdemoqwenai2025-creator/demoanalytics repo:
+//   NEXT_PUBLIC_STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/demoanalytics bun run build
 
 const isStaticExport = process.env.NEXT_PUBLIC_STATIC_EXPORT === '1';
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 const nextConfig: NextConfig = {
-  // In static export mode, use 'export'; otherwise use 'standalone' for dev
   output: isStaticExport ? 'export' : 'standalone',
-
-  // GitHub Pages serves under /<repo-name>/ for project sites
   basePath: basePath || undefined,
   assetPrefix: basePath || undefined,
-
-  // Required for static export (no Node.js server at runtime)
-  images: {
-    unoptimized: true,
-  },
-
-  // Trailing slash makes GitHub Pages routing cleaner
+  images: { unoptimized: true },
   trailingSlash: isStaticExport,
-
-  // Don't fail the build on lint errors in static export (CI-friendly)
-  eslint: {
-    ignoreDuringBuilds: isStaticExport,
-  },
-  typescript: {
-    ignoreBuildErrors: isStaticExport,
-  },
-
   reactStrictMode: false,
 };
 

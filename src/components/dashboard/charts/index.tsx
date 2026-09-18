@@ -6,6 +6,7 @@ import {
   LineChart, Line, Area, AreaChart, ReferenceLine, Cell,
 } from 'recharts'
 import { useFetch } from '@/hooks/use-fetch'
+import { SYNTHETIC_FALLBACK } from '@/lib/static-fallback'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusPill } from '../primitives'
@@ -13,7 +14,10 @@ import { StatusPill } from '../primitives'
 const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
 export function ThroughputChart() {
-  const { data, loading } = useFetch<{ pipelines: any[] }>('/api/pipelines', { refreshInterval: 15000 })
+  const { data, loading } = useFetch<{ pipelines: any[] }>('/api/pipelines', {
+    refreshInterval: 15000,
+    staticFallback: () => ({ pipelines: SYNTHETIC_FALLBACK.pipelines }),
+  })
 
   if (loading || !data) {
     return <Skeleton className="h-48 w-full" />
@@ -52,7 +56,10 @@ export function ThroughputChart() {
 }
 
 export function LatencyChart() {
-  const { data, loading } = useFetch<{ pipelines: any[] }>('/api/pipelines', { refreshInterval: 15000 })
+  const { data, loading } = useFetch<{ pipelines: any[] }>('/api/pipelines', {
+    refreshInterval: 15000,
+    staticFallback: () => ({ pipelines: SYNTHETIC_FALLBACK.pipelines }),
+  })
 
   if (loading || !data) {
     return <Skeleton className="h-48 w-full" />
@@ -91,7 +98,8 @@ export function LatencyChart() {
 
 export function PriceChart({ symbol, timeframe = '1m' }: { symbol: string; timeframe?: string }) {
   const { data, loading } = useFetch<{ bars: any[] }>(
-    `/api/ohlcv?symbol=${symbol}&timeframe=${timeframe}&limit=120`
+    `/api/ohlcv?symbol=${symbol}&timeframe=${timeframe}&limit=120`,
+    { staticFallback: () => ({ bars: generateStaticBars(symbol) }) }
   )
 
   if (loading || !data) {
@@ -175,7 +183,8 @@ export function PriceChart({ symbol, timeframe = '1m' }: { symbol: string; timef
 
 export function VolumeChart({ symbol, timeframe = '1m' }: { symbol: string; timeframe?: string }) {
   const { data, loading } = useFetch<{ bars: any[] }>(
-    `/api/ohlcv?symbol=${symbol}&timeframe=${timeframe}&limit=120`
+    `/api/ohlcv?symbol=${symbol}&timeframe=${timeframe}&limit=120`,
+    { staticFallback: () => ({ bars: generateStaticBars(symbol) }) }
   )
 
   if (loading || !data) return <Skeleton className="h-32 w-full" />
@@ -212,7 +221,10 @@ export function VolumeChart({ symbol, timeframe = '1m' }: { symbol: string; time
 }
 
 export function ModelDriftChart() {
-  const { data, loading } = useFetch<{ models: any[] }>('/api/ml-models', { refreshInterval: 30000 })
+  const { data, loading } = useFetch<{ models: any[] }>('/api/ml-models', {
+    refreshInterval: 30000,
+    staticFallback: () => ({ models: SYNTHETIC_FALLBACK.mlModels }),
+  })
 
   if (loading || !data) return <Skeleton className="h-64 w-full" />
 
@@ -253,11 +265,17 @@ export function ModelDriftChart() {
 export function RecentActivityFeed() {
   const { data: alertsData, loading: alertsLoading } = useFetch<{ alerts: any[] }>(
     '/api/alerts?limit=8',
-    { refreshInterval: 20000 }
+    {
+      refreshInterval: 20000,
+      staticFallback: () => ({ alerts: SYNTHETIC_FALLBACK.alerts }),
+    }
   )
   const { data: auditData, loading: auditLoading } = useFetch<{ logs: any[] }>(
     '/api/audit?limit=8',
-    { refreshInterval: 25000 }
+    {
+      refreshInterval: 25000,
+      staticFallback: () => ({ logs: SYNTHETIC_FALLBACK.audit }),
+    }
   )
 
   const items: any[] = []
@@ -334,4 +352,41 @@ export function RecentActivityFeed() {
       </div>
     </ScrollArea>
   )
+}
+
+// ──────────────────────────────────────────────────────────────
+// Static fallback: synthetic OHLCV bars for GitHub Pages mode
+// ──────────────────────────────────────────────────────────────
+
+const STATIC_OHLCV_BASE_PRICES: Record<string, number> = {
+  AAPL: 178.50, MSFT: 412.30, NVDA: 875.40, TSLA: 198.20, AMZN: 178.90,
+  GOOGL: 142.80, META: 487.60, SPX: 5165.30, EURUSD: 1.0856, GBPUSD: 1.2643,
+  USDJPY: 149.85, US10Y: 4.275, CL: 78.45, XAU: 2158.30,
+}
+
+function generateStaticBars(symbol: string) {
+  const base = STATIC_OHLCV_BASE_PRICES[symbol] || 100
+  const volatility = symbol === 'TSLA' || symbol === 'NVDA' ? 0.025 : 0.012
+  const bars: any[] = []
+  let currentPrice = base * 0.92
+  const now = Date.now()
+  for (let i = 119; i >= 0; i--) {
+    const ts = new Date(now - i * 60000) // 1m bars
+    const open = currentPrice
+    const change = (Math.random() - 0.48) * volatility * currentPrice
+    const close = Math.max(currentPrice + change, base * 0.5)
+    const high = Math.max(open, close) * (1 + Math.random() * 0.008)
+    const low = Math.min(open, close) * (1 - Math.random() * 0.008)
+    const volume = Math.floor(5000 + Math.random() * 50000)
+    bars.push({
+      ts: ts.toISOString(),
+      open: Number(open.toFixed(4)),
+      high: Number(high.toFixed(4)),
+      low: Number(low.toFixed(4)),
+      close: Number(close.toFixed(4)),
+      volume,
+    })
+    currentPrice = close
+  }
+  return bars
 }

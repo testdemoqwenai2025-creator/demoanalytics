@@ -6,10 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { useFetch } from '@/hooks/use-fetch'
+import { SYNTHETIC_FALLBACK } from '@/lib/static-fallback'
 import { SectionHeading, StatusPill, StatCard } from '../primitives'
 
 export function PipelinesSection() {
-  const { data, loading } = useFetch<{ pipelines: any[] }>('/api/pipelines', { refreshInterval: 15000 })
+  const { data, loading } = useFetch<{ pipelines: any[] }>('/api/pipelines', {
+    refreshInterval: 15000,
+    staticFallback: () => ({ pipelines: SYNTHETIC_FALLBACK.pipelines }),
+  })
 
   const running = data?.pipelines.filter(p => p.status === 'running').length ?? 0
   const degraded = data?.pipelines.filter(p => p.status === 'degraded').length ?? 0

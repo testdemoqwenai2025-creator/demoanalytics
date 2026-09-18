@@ -8,11 +8,18 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useFetch } from '@/hooks/use-fetch'
+import { SYNTHETIC_FALLBACK } from '@/lib/static-fallback'
 import { SectionHeading, StatusPill, EmptyState } from '../primitives'
 
 export function GovernanceSection() {
-  const { data: lineage, loading: linLoading } = useFetch<{ nodes: any[]; edges: any[] }>('/api/lineage')
-  const { data: audit, loading: audLoading } = useFetch<{ logs: any[] }>('/api/audit?limit=100')
+  const { data: lineage, loading: linLoading } = useFetch<{ nodes: any[]; edges: any[] }>(
+    '/api/lineage',
+    { staticFallback: () => SYNTHETIC_FALLBACK.lineage }
+  )
+  const { data: audit, loading: audLoading } = useFetch<{ logs: any[] }>(
+    '/api/audit?limit=100',
+    { staticFallback: () => ({ logs: SYNTHETIC_FALLBACK.audit }) }
+  )
 
   return (
     <>

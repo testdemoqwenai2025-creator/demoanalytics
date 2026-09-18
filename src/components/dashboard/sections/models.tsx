@@ -9,12 +9,18 @@ import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useFetch } from '@/hooks/use-fetch'
+import { SYNTHETIC_FALLBACK } from '@/lib/static-fallback'
 import { SectionHeading, StatusPill, StatCard, EmptyState } from '../primitives'
 import { ModelDriftChart } from '../charts'
 
 export function ModelsSection() {
-  const { data, loading } = useFetch<{ models: any[] }>('/api/ml-models', { refreshInterval: 30000 })
-  const { data: predData, loading: predLoading } = useFetch<{ predictions: any[] }>('/api/predictions?limit=50')
+  const { data, loading } = useFetch<{ models: any[] }>('/api/ml-models', {
+    refreshInterval: 30000,
+    staticFallback: () => ({ models: SYNTHETIC_FALLBACK.mlModels }),
+  })
+  const { data: predData, loading: predLoading } = useFetch<{ predictions: any[] }>('/api/predictions?limit=50', {
+    staticFallback: () => ({ predictions: SYNTHETIC_FALLBACK.predictions }),
+  })
 
   const production = data?.models.filter(m => m.status === 'production').length ?? 0
   const shadow = data?.models.filter(m => m.status === 'shadow').length ?? 0

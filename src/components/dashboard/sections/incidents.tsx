@@ -5,10 +5,14 @@ import { AlertOctagon, CheckCircle2, Clock, GitBranch } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useFetch } from '@/hooks/use-fetch'
+import { SYNTHETIC_FALLBACK } from '@/lib/static-fallback'
 import { SectionHeading, StatusPill, EmptyState } from '../primitives'
 
 export function IncidentsSection() {
-  const { data, loading } = useFetch<{ incidents: any[] }>('/api/incidents')
+  const { data, loading } = useFetch<{ incidents: any[] }>(
+    '/api/incidents',
+    { staticFallback: () => ({ incidents: SYNTHETIC_FALLBACK.incidents }) }
+  )
 
   return (
     <>

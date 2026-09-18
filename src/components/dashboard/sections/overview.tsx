@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useFetch } from '@/hooks/use-fetch'
+import { SYNTHETIC_FALLBACK } from '@/lib/static-fallback'
 import { StatCard, SectionHeading, StatusPill } from '../primitives'
 import { ThroughputChart, LatencyChart, RecentActivityFeed } from '../charts'
 
@@ -21,7 +22,10 @@ interface StatsResponse {
 }
 
 export function OverviewSection() {
-  const { data, loading } = useFetch<StatsResponse>('/api/stats', { refreshInterval: 15000 })
+  const { data, loading } = useFetch<StatsResponse>('/api/stats', {
+    refreshInterval: 15000,
+    staticFallback: () => SYNTHETIC_FALLBACK.stats,
+  })
 
   return (
     <>
@@ -154,7 +158,10 @@ function formatNumber(n: number): string {
 }
 
 function SloBurnDown() {
-  const { data, loading } = useFetch<{ slos: any[] }>('/api/slos', { refreshInterval: 30000 })
+  const { data, loading } = useFetch<{ slos: any[] }>('/api/slos', {
+    refreshInterval: 30000,
+    staticFallback: () => ({ slos: SYNTHETIC_FALLBACK.slos }),
+  })
 
   if (loading || !data) {
     return <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted animate-pulse rounded" />)}</div>

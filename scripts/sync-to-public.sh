@@ -72,6 +72,20 @@ rsync -av --delete --exclude='.git' \
   --exclude='.zscripts/' \
   --exclude='mini-services-dist/' \
   --exclude='next-service-dist/' \
+  --exclude='src/app/api/' \
+  --exclude='prisma/' \
+  --exclude='scripts/seed.ts' \
+  --exclude='scripts/cover.html' \
+  --exclude='scripts/cover.pdf' \
+  --exclude='scripts/body.pdf' \
+  --exclude='scripts/diagram_*.html' \
+  --exclude='scripts/diagram_*.png' \
+  --exclude='scripts/chart_*.png' \
+  --exclude='scripts/render_*.py' \
+  --exclude='scripts/build_body.py' \
+  --exclude='scripts/merge_final.py' \
+  --exclude='download/' \
+  --exclude='examples/' \
   "$TMP_EXTRACT/" "$PUBLIC_DIR/"
 
 rm -rf "$TMP_EXTRACT"

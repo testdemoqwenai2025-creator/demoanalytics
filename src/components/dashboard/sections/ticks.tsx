@@ -10,16 +10,65 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useFetch } from '@/hooks/use-fetch'
+import { SYNTHETIC_FALLBACK } from '@/lib/static-fallback'
 import { SectionHeading, StatusPill, EmptyState } from '../primitives'
 import { PriceChart, VolumeChart } from '../charts'
+
+const STATIC_SYMBOLS = [
+  { id: 'sym1', ticker: 'AAPL', name: 'Apple Inc.', assetClass: 'equity', currency: 'USD' },
+  { id: 'sym2', ticker: 'MSFT', name: 'Microsoft Corp', assetClass: 'equity', currency: 'USD' },
+  { id: 'sym3', ticker: 'NVDA', name: 'NVIDIA Corp', assetClass: 'equity', currency: 'USD' },
+  { id: 'sym4', ticker: 'TSLA', name: 'Tesla Inc', assetClass: 'equity', currency: 'USD' },
+  { id: 'sym5', ticker: 'AMZN', name: 'Amazon.com Inc', assetClass: 'equity', currency: 'USD' },
+  { id: 'sym6', ticker: 'GOOGL', name: 'Alphabet Inc', assetClass: 'equity', currency: 'USD' },
+  { id: 'sym7', ticker: 'META', name: 'Meta Platforms', assetClass: 'equity', currency: 'USD' },
+  { id: 'sym8', ticker: 'SPX', name: 'S&P 500 Index', assetClass: 'index', currency: 'USD' },
+  { id: 'sym9', ticker: 'EURUSD', name: 'Euro / US Dollar', assetClass: 'fx', currency: 'USD' },
+  { id: 'sym10', ticker: 'GBPUSD', name: 'British Pound / US Dollar', assetClass: 'fx', currency: 'USD' },
+  { id: 'sym11', ticker: 'USDJPY', name: 'US Dollar / Japanese Yen', assetClass: 'fx', currency: 'JPY' },
+  { id: 'sym12', ticker: 'US10Y', name: 'US 10Y Treasury Yield', assetClass: 'rate', currency: 'USD' },
+  { id: 'sym13', ticker: 'CL', name: 'WTI Crude Oil', assetClass: 'commodity', currency: 'USD' },
+  { id: 'sym14', ticker: 'XAU', name: 'Gold Spot', assetClass: 'commodity', currency: 'USD' },
+]
+
+const STATIC_VENUES = [
+  { id: 'v1', code: 'CME', name: 'Chicago Mercantile Exchange', region: 'us-east-1', timezone: 'America/Chicago' },
+  { id: 'v2', code: 'NASDAQ', name: 'NASDAQ', region: 'us-east-1', timezone: 'America/New_York' },
+  { id: 'v3', code: 'LSE', name: 'London Stock Exchange', region: 'eu-west-1', timezone: 'Europe/London' },
+  { id: 'v4', code: 'EUREX', name: 'Eurex', region: 'eu-west-1', timezone: 'Europe/Berlin' },
+  { id: 'v5', code: 'TSE', name: 'Tokyo Stock Exchange', region: 'ap-southeast-2', timezone: 'Asia/Tokyo' },
+]
+
+const STATIC_TICK_BASE_PRICES: Record<string, number> = {
+  AAPL: 178.50, MSFT: 412.30, NVDA: 875.40, TSLA: 198.20, AMZN: 178.90,
+  GOOGL: 142.80, META: 487.60, SPX: 5165.30, EURUSD: 1.0856, GBPUSD: 1.2643,
+  USDJPY: 149.85, US10Y: 4.275, CL: 78.45, XAU: 2158.30,
+}
+
+function generateStaticTicks(symbol: string) {
+  const base = STATIC_TICK_BASE_PRICES[symbol] || 100
+  return Array.from({ length: 100 }, (_, i) => ({
+    id: `tick-${i}`,
+    ts: new Date(Date.now() - i * 30000).toISOString(),
+    symbol,
+    venue: STATIC_VENUES[i % STATIC_VENUES.length].code,
+    price: base + (Math.random() - 0.5) * base * 0.01,
+    size: Math.floor(100 + Math.random() * 900),
+    side: ['bid', 'ask', 'trade'][i % 3],
+    feedLagMs: 100 + Math.random() * 200,
+  }))
+}
 
 export function TicksSection() {
   const [symbol, setSymbol] = React.useState('AAPL')
   const [timeframe, setTimeframe] = React.useState('1m')
 
-  const { data: symData } = useFetch<{ symbols: any[] }>('/api/symbols')
+  const { data: symData } = useFetch<{ symbols: any[] }>('/api/symbols', {
+    staticFallback: () => ({ symbols: STATIC_SYMBOLS, venues: STATIC_VENUES }),
+  })
   const { data: tickData, loading: tickLoading } = useFetch<{ ticks: any[] }>(
-    `/api/ticks?symbol=${symbol}&limit=100`
+    `/api/ticks?symbol=${symbol}&limit=100`,
+    { staticFallback: () => ({ ticks: generateStaticTicks(symbol) }) }
   )
 
   return (

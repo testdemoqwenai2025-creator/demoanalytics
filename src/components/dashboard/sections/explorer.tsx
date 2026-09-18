@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useFetch } from '@/hooks/use-fetch'
+import { SYNTHETIC_FALLBACK } from '@/lib/static-fallback'
 import { SectionHeading, EmptyState } from '../primitives'
 
 export function ExplorerSection() {
@@ -23,7 +24,10 @@ LIMIT 500`)
   const [error, setError] = React.useState<string | null>(null)
   const [elapsedMs, setElapsedMs] = React.useState<number | null>(null)
 
-  const { data: queriesData, loading: queriesLoading } = useFetch<{ queries: any[] }>('/api/queries')
+  const { data: queriesData, loading: queriesLoading } = useFetch<{ queries: any[] }>(
+    '/api/queries',
+    { staticFallback: () => ({ queries: SYNTHETIC_FALLBACK.queries }) }
+  )
 
   const runQuery = async () => {
     setRunning(true)
@@ -34,23 +38,59 @@ LIMIT 500`)
     // Simulated query execution — in a real system this would hit Trino/Snowflake
     await new Promise(r => setTimeout(r, 800 + Math.random() * 1200))
 
-    // Synthesize a result set from the SQL by looking for table hints
+    // Synthesize a result set from the SQL by looking for table hints.
+    // Uses static fallback data when API routes are unavailable (GitHub Pages).
     const lower = sql.toLowerCase()
     let sample: any[] = []
-    if (lower.includes('ticks.normalized')) {
-      const { data: tickData } = await fetch('/api/ticks?limit=20').then(r => r.json())
-      sample = tickData.ticks || []
-    } else if (lower.includes('ohlcv')) {
-      const sym = (sql.match(/symbol\s*=\s*'(\w+)'/i) || [])[1] || 'AAPL'
-      const { data: ohlcvData } = await fetch(`/api/ohlcv?symbol=${sym}&limit=20`).then(r => r.json())
-      sample = ohlcvData.bars || []
-    } else if (lower.includes('pipelines')) {
-      const { data: pData } = await fetch('/api/pipelines').then(r => r.json())
-      sample = pData.pipelines || []
-    } else if (lower.includes('alerts')) {
-      const { data: aData } = await fetch('/api/alerts?limit=20').then(r => r.json())
-      sample = aData.alerts || []
-    } else {
+    try {
+      if (lower.includes('ticks.normalized')) {
+        const res = await fetch('/api/ticks?limit=20')
+        if (res.ok) {
+          const tickData = await res.json()
+          sample = tickData.ticks || []
+        } else {
+          // Static fallback: synthesize tick-like rows
+          sample = Array.from({ length: 10 }, (_, i) => ({
+            ts: new Date(Date.now() - i * 30000).toISOString(),
+            symbol: 'AAPL',
+            price: 178 + Math.random() * 2,
+            size: Math.floor(100 + Math.random() * 900),
+            side: ['bid', 'ask', 'trade'][i % 3],
+          }))
+        }
+      } else if (lower.includes('ohlcv')) {
+        const sym = (sql.match(/symbol\s*=\s*'(\w+)'/i) || [])[1] || 'AAPL'
+        const res = await fetch(`/api/ohlcv?symbol=${sym}&limit=20`)
+        if (res.ok) {
+          const ohlcvData = await res.json()
+          sample = ohlcvData.bars || []
+        } else {
+          sample = Array.from({ length: 10 }, (_, i) => ({
+            ts: new Date(Date.now() - i * 60000).toISOString(),
+            open: 178 + Math.random(),
+            high: 179 + Math.random(),
+            low: 177 + Math.random(),
+            close: 178 + Math.random(),
+            volume: Math.floor(5000 + Math.random() * 50000),
+          }))
+        }
+      } else if (lower.includes('pipelines')) {
+        const res = await fetch('/api/pipelines')
+        const pData = res.ok ? await res.json() : { pipelines: SYNTHETIC_FALLBACK.pipelines }
+        sample = pData.pipelines || []
+      } else if (lower.includes('alerts')) {
+        const res = await fetch('/api/alerts?limit=20')
+        const aData = res.ok ? await res.json() : { alerts: SYNTHETIC_FALLBACK.alerts }
+        sample = aData.alerts || []
+      } else {
+        sample = Array.from({ length: 5 }, (_, i) => ({
+          col1: `value_${i}`,
+          col2: Math.random() * 100,
+          col3: new Date(Date.now() - i * 60000).toISOString(),
+        }))
+      }
+    } catch {
+      // Network error — fall back to synthetic
       sample = Array.from({ length: 5 }, (_, i) => ({
         col1: `value_${i}`,
         col2: Math.random() * 100,

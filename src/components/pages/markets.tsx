@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { RefreshCw, TrendingUp, TrendingDown } from 'lucide-react'
+import { RefreshCw, TrendingUp, TrendingDown, ExternalLink, WifiOff } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +16,28 @@ import {
   BarChart, Bar, Cell,
 } from 'recharts'
 
+// Detect if we're in static-export mode (no API server).
+// We do this by checking if basePath is set OR by attempting a fetch to /api/stats.
+function useStaticMode() {
+  const [isStatic, setIsStatic] = React.useState<boolean | null>(null)
+  React.useEffect(() => {
+    // If basePath is set via env, we're definitely in static mode
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH
+    if (basePath) {
+      setIsStatic(true)
+      return
+    }
+    // Otherwise probe: try to hit /api/stats; if it 404s, we're static
+    fetch('/api/stats', { cache: 'no-store' })
+      .then(r => setIsStatic(!r.ok))
+      .catch(() => setIsStatic(true))
+  }, [])
+  return isStatic
+}
+
 export function MarketsPage() {
+  const isStatic = useStaticMode()
+
   return (
     <>
       <SectionHeading
@@ -24,10 +45,26 @@ export function MarketsPage() {
         description="Real-time data from free public APIs. No keys required."
         action={
           <Badge variant="outline" className="text-[10px]">
-            CoinGecko &middot; Frankfurter &middot; Stooq
+            CoinGecko &middot; Frankfurter &middot; synthetic
           </Badge>
         }
       />
+
+      {isStatic === true && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 p-3 flex items-start gap-3">
+          <WifiOff className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+          <div className="text-xs">
+            <div className="font-medium text-amber-900 dark:text-amber-200 mb-0.5">
+              Static preview mode &mdash; live data is fetched directly from public APIs in your browser
+            </div>
+            <p className="text-amber-700 dark:text-amber-300">
+              Crypto prices load from <code className="font-mono text-[10px] bg-amber-100 dark:bg-amber-900/40 px-1 rounded">api.coingecko.com</code> and
+              FX rates from <code className="font-mono text-[10px] bg-amber-100 dark:bg-amber-900/40 px-1 rounded">api.frankfurter.app</code>.
+              If a provider is rate-limiting or offline, switch tabs and try again.
+            </p>
+          </div>
+        </div>
+      )}
 
       <Tabs defaultValue="crypto">
         <TabsList>
@@ -37,10 +74,10 @@ export function MarketsPage() {
         </TabsList>
 
         <TabsContent value="crypto" className="mt-4">
-          <CryptoMarkets />
+          <CryptoMarkets isStatic={isStatic} />
         </TabsContent>
         <TabsContent value="fx" className="mt-4">
-          <FxMarkets />
+          <FxMarkets isStatic={isStatic} />
         </TabsContent>
         <TabsContent value="equities" className="mt-4">
           <EquitiesMarkets />
@@ -51,32 +88,43 @@ export function MarketsPage() {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Crypto via CoinGecko (free, no key)
+// Crypto: try server proxy first, fall back to direct CoinGecko
 // ──────────────────────────────────────────────────────────────
 
-function CryptoMarkets() {
-  const { data, loading, error, refetch } = useFetch<{ markets: any[] }>('/api/markets?type=crypto', {
-    refreshInterval: 60000,
-  })
+function CryptoMarkets({ isStatic }: { isStatic: boolean | null }) {
+  // Always fetch directly from CoinGecko (CORS-enabled). Skip the server proxy entirely.
+  const { data, loading, error, refetch } = useFetch<{ markets: any[] }>(
+    'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=15&page=1&sparkline=false&price_change_percentage=24h',
+    { refreshInterval: 60000 }
+  )
 
-  const totalMarketCap = data?.markets?.reduce((s, m) => s + (m.marketCap || 0), 0) || 0
-  const totalVolume = data?.markets?.reduce((s, m) => s + (m.volume24h || 0), 0) || 0
-  const gainers = data?.markets?.filter(m => m.change24h > 0).length || 0
-  const losers = data?.markets?.filter(m => m.change24h < 0).length || 0
+  // Transform CoinGecko response into our shape
+  const markets = React.useMemo(() => {
+    if (!data) return []
+    // CoinGecko returns an array directly
+    const raw = Array.isArray(data) ? data : (data as any).markets
+    if (!Array.isArray(raw)) return []
+    return raw.map((c: any) => ({
+      id: c.id,
+      symbol: (c.symbol || '').toUpperCase(),
+      name: c.name,
+      price: c.current_price ?? 0,
+      marketCap: c.market_cap ?? 0,
+      volume24h: c.total_volume ?? 0,
+      change24h: c.price_change_percentage_24h ?? 0,
+    }))
+  }, [data])
+
+  const totalMarketCap = markets.reduce((s, m) => s + (m.marketCap || 0), 0)
+  const totalVolume = markets.reduce((s, m) => s + (m.volume24h || 0), 0)
+  const gainers = markets.filter(m => m.change24h > 0).length
+  const losers = markets.filter(m => m.change24h < 0).length
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard
-          label="Total Market Cap"
-          value={totalMarketCap ? `$${(totalMarketCap / 1e9).toFixed(2)}B` : '—'}
-          loading={loading}
-        />
-        <StatCard
-          label="24h Volume"
-          value={totalVolume ? `$${(totalVolume / 1e9).toFixed(2)}B` : '—'}
-          loading={loading}
-        />
+        <StatCard label="Total Market Cap" value={totalMarketCap ? `$${(totalMarketCap / 1e9).toFixed(2)}B` : '—'} loading={loading} />
+        <StatCard label="24h Volume" value={totalVolume ? `$${(totalVolume / 1e9).toFixed(2)}B` : '—'} loading={loading} />
         <StatCard label="Gainers" value={gainers} icon={<TrendingUp className="h-4 w-4 text-emerald-500" />} loading={loading} />
         <StatCard label="Losers" value={losers} icon={<TrendingDown className="h-4 w-4 text-red-500" />} loading={loading} />
       </div>
@@ -85,7 +133,12 @@ function CryptoMarkets() {
         <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle className="text-sm">Top Cryptocurrencies by Market Cap</CardTitle>
-            <CardDescription className="text-xs mt-0.5">Source: CoinGecko API &middot; updates every 60s</CardDescription>
+            <CardDescription className="text-xs mt-0.5">
+              Source: CoinGecko public API &middot; updates every 60s &middot;
+              <a href="https://www.coingecko.com" target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center gap-0.5 hover:text-foreground">
+                coingecko.com <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            </CardDescription>
           </div>
           <Button size="sm" variant="outline" onClick={refetch} disabled={loading}>
             <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
@@ -97,12 +150,13 @@ function CryptoMarkets() {
             <div className="text-sm text-destructive p-4">
               Failed to load crypto data: {error}
               <p className="text-xs text-muted-foreground mt-2">
-                CoinGecko has aggressive rate limits. Try again in a minute, or check the FX/Equities tabs.
+                CoinGecko has aggressive rate limits (10-30 calls/min on free tier).
+                Wait a minute and try Refresh, or try the FX tab.
               </p>
             </div>
           ) : loading ? (
             <div className="space-y-2">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div>
-          ) : !data?.markets?.length ? (
+          ) : !markets.length ? (
             <EmptyState title="No crypto data" description="API may be rate-limited" />
           ) : (
             <ScrollArea className="h-[480px]">
@@ -118,7 +172,7 @@ function CryptoMarkets() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.markets.map((m, i) => (
+                  {markets.map((m, i) => (
                     <TableRow key={m.id}>
                       <TableCell className="text-xs font-mono text-muted-foreground">{i + 1}</TableCell>
                       <TableCell>
@@ -162,16 +216,18 @@ function CryptoMarkets() {
 }
 
 // ──────────────────────────────────────────────────────────────
-// FX via Frankfurter (ECB data, free, no key)
+// FX: Frankfurter (ECB rates, CORS-enabled, free)
 // ──────────────────────────────────────────────────────────────
 
-function FxMarkets() {
-  const { data, loading, error, refetch } = useFetch<{ rates: Record<string, number>; base: string; date: string }>(
-    '/api/markets?type=fx',
+function FxMarkets({ isStatic }: { isStatic: boolean | null }) {
+  // Fetch directly from Frankfurter (CORS-enabled)
+  const { data, loading, error, refetch } = useFetch<any>(
+    'https://api.frankfurter.app/latest?from=USD',
     { refreshInterval: 300000 }
   )
 
-  const currencies = data ? Object.entries(data.rates).sort(([a], [b]) => a.localeCompare(b)) : []
+  const rates: Record<string, number> = data?.rates || {}
+  const currencies = Object.entries(rates).sort(([a], [b]) => a.localeCompare(b))
   const chartData = currencies.map(([code, rate]) => ({ code, rate: Number(rate.toFixed(4)) }))
 
   return (
@@ -186,7 +242,12 @@ function FxMarkets() {
         <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle className="text-sm">Exchange Rates</CardTitle>
-            <CardDescription className="text-xs mt-0.5">Source: Frankfurter API &middot; ECB reference rates &middot; daily</CardDescription>
+            <CardDescription className="text-xs mt-0.5">
+              Source: Frankfurter API &middot; ECB reference rates &middot; daily &middot;
+              <a href="https://www.frankfurter.app" target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center gap-0.5 hover:text-foreground">
+                frankfurter.app <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            </CardDescription>
           </div>
           <Button size="sm" variant="outline" onClick={refetch} disabled={loading}>
             <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
@@ -203,13 +264,7 @@ function FxMarkets() {
               <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={chartData} margin={{ top: 4, right: 8, left: -10, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3} vertical={false} />
-                  <XAxis
-                    dataKey="code"
-                    tick={{ fontSize: 9 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                  />
+                  <XAxis dataKey="code" tick={{ fontSize: 9 }} angle={-45} textAnchor="end" height={60} />
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip
                     contentStyle={{ fontSize: 11, borderRadius: 6 }}
@@ -241,9 +296,9 @@ function FxMarkets() {
                             <span className="text-xs text-muted-foreground">{currencyName(code)}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums text-xs">{rate.toFixed(4)}</TableCell>
+                        <TableCell className="text-right font-mono tabular-nums text-xs">{(rate as number).toFixed(4)}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums text-xs text-muted-foreground">
-                          {(1 / rate).toFixed(4)}
+                          {(1 / (rate as number)).toFixed(4)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -259,45 +314,33 @@ function FxMarkets() {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Equities via Stooq (free CSV, no key)
+// Equities: synthetic (Stooq requires JS verification, so we generate)
 // ──────────────────────────────────────────────────────────────
 
 const EQUITY_SYMBOLS = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'GOOGL', 'META']
+const EQUITY_BASE_PRICES: Record<string, number> = {
+  AAPL: 178.50, MSFT: 412.30, NVDA: 875.40, TSLA: 198.20, AMZN: 178.90,
+  GOOGL: 142.80, META: 487.60,
+}
 
 function EquitiesMarkets() {
   const [symbol, setSymbol] = React.useState('AAPL')
-  return (
-    <EquityDetail symbol={symbol} symbols={EQUITY_SYMBOLS} onSymbolChange={setSymbol} />
-  )
-}
 
-function EquityDetail({ symbol, symbols, onSymbolChange }: {
-  symbol: string
-  symbols: string[]
-  onSymbolChange: (s: string) => void
-}) {
-  const { data, loading, error, refetch } = useFetch<{ symbol: string; bars: any[]; latest: any }>(
-    `/api/markets?type=equity&symbol=${symbol}`,
-    { refreshInterval: 0 }
-  )
+  // Generate synthetic bars client-side (no server needed)
+  const bars = React.useMemo(() => generateSyntheticBars(symbol), [symbol])
+  const latest = bars[bars.length - 1]
 
-  const bars = data?.bars || []
-  const chartData = bars.map(b => ({
-    date: b.date,
-    close: b.close,
-    high: b.high,
-    low: b.low,
-  }))
+  const chartData = bars.map(b => ({ date: b.date, close: b.close, high: b.high, low: b.low }))
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        {symbols.map(s => (
+        {EQUITY_SYMBOLS.map(s => (
           <Button
             key={s}
             size="sm"
             variant={s === symbol ? 'default' : 'outline'}
-            onClick={() => onSymbolChange(s)}
+            onClick={() => setSymbol(s)}
             className="font-mono text-xs"
           >
             {s}
@@ -310,65 +353,71 @@ function EquityDetail({ symbol, symbols, onSymbolChange }: {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Latest Close" value={data?.latest?.close ? `$${data.latest.close.toFixed(2)}` : '—'} loading={loading} />
-        <StatCard label="Day High" value={data?.latest?.high ? `$${data.latest.high.toFixed(2)}` : '—'} loading={loading} />
-        <StatCard label="Day Low" value={data?.latest?.low ? `$${data.latest.low.toFixed(2)}` : '—'} loading={loading} />
-        <StatCard label="Volume" value={data?.latest?.volume ? formatLargeNumber(data.latest.volume) : '—'} loading={loading} />
+        <StatCard label="Latest Close" value={`$${latest.close.toFixed(2)}`} />
+        <StatCard label="Day High" value={`$${latest.high.toFixed(2)}`} />
+        <StatCard label="Day Low" value={`$${latest.low.toFixed(2)}`} />
+        <StatCard label="Volume" value={formatLargeNumber(latest.volume)} />
       </div>
 
       <Card>
-        <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
-          <div>
-            <CardTitle className="text-sm">{symbol} &middot; Daily OHLC &middot; last 90 days</CardTitle>
-            <CardDescription className="text-xs mt-0.5">Synthetic OHLCV &middot; last 90 days &middot; Stooq requires JS verification so we generate plausible data</CardDescription>
-          </div>
-          <Button size="sm" variant="outline" onClick={refetch} disabled={loading}>
-            <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">{symbol} &middot; Daily OHLC &middot; last 90 days</CardTitle>
+          <CardDescription className="text-xs mt-0.5">
+            Synthetic OHLCV &middot; Stooq requires JS verification so we generate plausible data on the client
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {error ? (
-            <div className="text-sm text-destructive p-4">Failed to load equity data: {error}</div>
-          ) : loading ? (
-            <Skeleton className="h-72 w-full" />
-          ) : !chartData.length ? (
-            <EmptyState title="No data" />
-          ) : (
-            <ResponsiveContainer width="100%" height={320}>
-              <AreaChart data={chartData} margin={{ top: 8, right: 16, left: -8, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 9 }}
-                  tickFormatter={(v) => String(v).slice(5)}
-                />
-                <YAxis tick={{ fontSize: 10 }} domain={['auto', 'auto']} />
-                <Tooltip
-                  contentStyle={{ fontSize: 11, borderRadius: 6 }}
-                  formatter={(v: any) => [`$${Number(v).toFixed(2)}`, '']}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="close"
-                  stroke="#0ea5e9"
-                  strokeWidth={2}
-                  fill="url(#equityGrad)"
-                  dot={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
+          <ResponsiveContainer width="100%" height={320}>
+            <AreaChart data={chartData} margin={{ top: 8, right: 16, left: -8, bottom: 0 }}>
+              <defs>
+                <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={(v) => String(v).slice(5)} />
+              <YAxis tick={{ fontSize: 10 }} domain={['auto', 'auto']} />
+              <Tooltip
+                contentStyle={{ fontSize: 11, borderRadius: 6 }}
+                formatter={(v: any) => [`$${Number(v).toFixed(2)}`, '']}
+              />
+              <Area type="monotone" dataKey="close" stroke="#0ea5e9" strokeWidth={2} fill="url(#equityGrad)" dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
     </div>
   )
+}
+
+function generateSyntheticBars(symbol: string) {
+  const basePrice = EQUITY_BASE_PRICES[symbol] || 100
+  const volatility = symbol === 'TSLA' || symbol === 'NVDA' ? 0.025 : 0.012
+  const bars: any[] = []
+  let currentPrice = basePrice * 0.92
+  const now = new Date()
+  for (let i = 89; i >= 0; i--) {
+    const date = new Date(now)
+    date.setDate(date.getDate() - i)
+    if (date.getDay() === 0 || date.getDay() === 6) continue
+    const open = currentPrice
+    const change = (Math.random() - 0.48) * volatility * currentPrice
+    const close = Math.max(currentPrice + change, basePrice * 0.5)
+    const high = Math.max(open, close) * (1 + Math.random() * 0.008)
+    const low = Math.min(open, close) * (1 - Math.random() * 0.008)
+    const volume = Math.floor(5_000_000 + Math.random() * 50_000_000)
+    bars.push({
+      date: date.toISOString().slice(0, 10),
+      open: Number(open.toFixed(2)),
+      high: Number(high.toFixed(2)),
+      low: Number(low.toFixed(2)),
+      close: Number(close.toFixed(2)),
+      volume,
+    })
+    currentPrice = close
+  }
+  return bars
 }
 
 // ──────────────────────────────────────────────────────────────

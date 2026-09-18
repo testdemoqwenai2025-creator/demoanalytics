@@ -9,12 +9,19 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useFetch } from '@/hooks/use-fetch'
+import { SYNTHETIC_FALLBACK } from '@/lib/static-fallback'
 import { SectionHeading, StatusPill, EmptyState } from '../primitives'
 import { toast } from 'sonner'
 
 export function AlertsSection() {
-  const { data: sloData, loading: sloLoading } = useFetch<{ slos: any[] }>('/api/slos', { refreshInterval: 30000 })
-  const { data: alertData, loading: alertLoading } = useFetch<{ alerts: any[] }>('/api/alerts', { refreshInterval: 15000 })
+  const { data: sloData, loading: sloLoading } = useFetch<{ slos: any[] }>('/api/slos', {
+    refreshInterval: 30000,
+    staticFallback: () => ({ slos: SYNTHETIC_FALLBACK.slos }),
+  })
+  const { data: alertData, loading: alertLoading } = useFetch<{ alerts: any[] }>('/api/alerts', {
+    refreshInterval: 15000,
+    staticFallback: () => ({ alerts: SYNTHETIC_FALLBACK.alerts }),
+  })
 
   const ackAlert = async (id: string) => {
     const res = await fetch('/api/alerts', {

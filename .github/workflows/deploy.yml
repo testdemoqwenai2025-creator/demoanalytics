@@ -1,10 +1,9 @@
 # Build and deploy MERIDIAN Data Analyst Template to GitHub Pages
 #
-# This workflow runs on the PUBLIC repo (demoanalytics) only.
+# This workflow runs on the PUBLIC repo (demoanalytics).
 # It builds a static export and deploys to GitHub Pages.
 #
-# The private repo (dataanalysistemplate) does NOT use this workflow —
-# it runs the full Next.js server with API routes locally.
+# The site will be live at: https://<username>.github.io/demoanalytics/
 
 name: Deploy to GitHub Pages
 
@@ -38,18 +37,19 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Setup Pages
+        id: pages
         uses: actions/configure-pages@v4
         with:
-          # The base path will be /<repo-name>/ for project sites
-          # configure-pages auto-detects this from the repo name
           enablement: true
 
       - name: Build static export
         env:
+          # Enable static export mode
           NEXT_PUBLIC_STATIC_EXPORT: '1'
-          # NEXT_PUBLIC_BASE_PATH is set by configure-pages to /<repo-name>
+          # basePath = /<repo-name> for GitHub Pages project sites
+          # configure-pages sets this output automatically
           NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
-        run: bun run build
+        run: bun run build:static
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

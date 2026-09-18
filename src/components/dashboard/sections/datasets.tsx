@@ -9,13 +9,17 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useFetch } from '@/hooks/use-fetch'
+import { SYNTHETIC_FALLBACK } from '@/lib/static-fallback'
 import { SectionHeading, StatusPill, EmptyState } from '../primitives'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 export function DatasetsSection() {
   const [tierFilter, setTierFilter] = React.useState<string>('all')
   const [search, setSearch] = React.useState('')
-  const { data, loading } = useFetch<{ datasets: any[] }>('/api/datasets', { refreshInterval: 60000 })
+  const { data, loading } = useFetch<{ datasets: any[] }>('/api/datasets', {
+    refreshInterval: 60000,
+    staticFallback: () => ({ datasets: SYNTHETIC_FALLBACK.datasets }),
+  })
 
   const filtered = React.useMemo(() => {
     if (!data?.datasets) return []

@@ -21,7 +21,7 @@ interface DashboardState {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
 
-  // Mock auth
+  // Mock auth (persisted to localStorage so it survives page reloads)
   isAuthenticated: boolean
   userEmail: string | null
   login: (email: string) => void
@@ -31,6 +31,34 @@ interface DashboardState {
   refreshKey: number
   triggerRefresh: () => void
 }
+
+// Hydrate auth from localStorage (so static export can persist across reloads)
+const STORAGE_KEY = 'meridian-mock-auth'
+function loadAuth(): { isAuthenticated: boolean; userEmail: string | null } {
+  if (typeof window === 'undefined') return { isAuthenticated: false, userEmail: null }
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return { isAuthenticated: false, userEmail: null }
+    const parsed = JSON.parse(raw)
+    return {
+      isAuthenticated: Boolean(parsed.isAuthenticated),
+      userEmail: parsed.userEmail || null,
+    }
+  } catch {
+    return { isAuthenticated: false, userEmail: null }
+  }
+}
+
+function saveAuth(isAuthenticated: boolean, userEmail: string | null) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ isAuthenticated, userEmail }))
+  } catch {
+    // localStorage might be unavailable in some browsers / sandboxed iframes
+  }
+}
+
+const initialAuth = loadAuth()
 
 export const useDashboardStore = create<DashboardState>((set) => ({
   activePage: 'home',
@@ -42,10 +70,16 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   sidebarOpen: false,
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
-  isAuthenticated: false,
-  userEmail: null,
-  login: (email) => set({ isAuthenticated: true, userEmail: email }),
-  logout: () => set({ isAuthenticated: false, userEmail: null, activePage: 'home' }),
+  isAuthenticated: initialAuth.isAuthenticated,
+  userEmail: initialAuth.userEmail,
+  login: (email) => {
+    saveAuth(true, email)
+    set({ isAuthenticated: true, userEmail: email })
+  },
+  logout: () => {
+    saveAuth(false, null)
+    set({ isAuthenticated: false, userEmail: null, activePage: 'home' })
+  },
 
   refreshKey: 0,
   triggerRefresh: () => set((state) => ({ refreshKey: state.refreshKey + 1 })),
