@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useDashboardStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
+import { useKeyboardShortcuts, ShortcutsHelp } from '@/hooks/use-keyboard-shortcuts'
 
 const PAGE_LABELS: Record<string, { title: string; subtitle: string }> = {
   '/':              { title: 'Home',          subtitle: 'Welcome to MERIDIAN' },
@@ -21,7 +22,9 @@ const PAGE_LABELS: Record<string, { title: string; subtitle: string }> = {
   '/exports':       { title: 'Data Export',   subtitle: 'Excel, PDF, CSV, JSON export' },
   '/query-builder': { title: 'Query Builder', subtitle: 'Visual no-SQL query builder' },
   '/charts':        { title: 'Chart Sync',    subtitle: 'Crosshair sync + annotations' },
+  '/charts-advanced': { title: 'Advanced Charts', subtitle: 'Candlestick, heatmap, treemap, donut' },
   '/stories':        { title: 'Data Stories',  subtitle: 'Auto-generated narrative briefs' },
+  '/ask':            { title: 'Ask (NL Query)', subtitle: 'Natural language → SQL via LLM' },
   '/automate':       { title: 'Automation',    subtitle: 'Rules & scheduled jobs' },
   '/notifications': { title: 'Notifications', subtitle: 'Email + webhook channels' },
   '/pricing':        { title: 'Pricing & Limits', subtitle: 'Free tier usage and upgrade paths' },
@@ -45,13 +48,16 @@ const SEARCH_ITEMS: { label: string; href: string; description: string }[] = [
   { label: 'Data Export',       href: '/exports',        description: 'Excel, PDF, CSV, JSON export' },
   { label: 'Query Builder',     href: '/query-builder',  description: 'Visual no-SQL query builder' },
   { label: 'Chart Sync',        href: '/charts',         description: 'Crosshair sync + annotations' },
+  { label: 'Advanced Charts',  href: '/charts-advanced', description: 'Candlestick, heatmap, treemap, donut' },
   { label: 'Data Stories',      href: '/stories',        description: 'Auto-generated narrative briefs' },
+  { label: 'Ask (NL Query)',   href: '/ask',            description: 'Natural language to SQL via LLM' },
   { label: 'Automation Rules',   href: '/automate',       description: 'Rules & scheduled jobs' },
   { label: 'Notifications',     href: '/notifications',   description: 'Email + webhook channels' },
   { label: 'Pricing & Limits',  href: '/pricing',        description: 'Free tier usage and upgrade paths' },
   { label: 'Connectors',        href: '/connectors',      description: '18 free-tier data source providers' },
   { label: 'UI Components',     href: '/components',      description: 'Reusable building blocks (LiveFilter, RangeSlider, FeedbackWidget)' },
   { label: 'Settings',          href: '/settings',       description: 'API keys, data sources' },
+  { label: 'Backup & Restore',  href: '/backup',          description: 'Export/import all local data' },
   { label: 'About',              href: '/about',          description: 'Project & privacy notice' },
   { label: 'Documentation',     href: '/docs',            description: 'Quick reference' },
   { label: 'Login',              href: '/login',          description: 'Mock auth form (demo/admin/enterprise)' },
@@ -64,6 +70,7 @@ export function SiteHeader() {
   const [mounted, setMounted] = React.useState(false)
   const setSidebarOpen = useDashboardStore(s => s.setSidebarOpen)
   const pathname = usePathname()
+  const { showHelp, setShowHelp, shortcuts } = useKeyboardShortcuts()
 
   // Find the matching page label (handle dynamic routes by checking prefixes)
   const meta = React.useMemo(() => {
@@ -250,6 +257,7 @@ export function SiteHeader() {
           </Button>
         </a>
       </div>
+      <ShortcutsHelp show={showHelp} onClose={() => setShowHelp(false)} shortcuts={shortcuts} />
     </header>
   )
 }

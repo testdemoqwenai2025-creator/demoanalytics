@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./print.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
 
 export const metadata: Metadata = {
   title: "MERIDIAN · Data Analyst Template",
@@ -43,11 +46,16 @@ export default function RootLayout({
         >
           <div className="flex min-h-screen flex-col bg-background">
             <SiteHeader />
-            <div className="flex-1">{children}</div>
+            <div className="flex-1">
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
+            </div>
             <SiteFooter />
           </div>
           <Toaster />
           <ServiceWorkerRegister />
+          <OnboardingTour />
         </ThemeProvider>
       </body>
     </html>

@@ -31,13 +31,16 @@ const TOP_NAV: NavItem[] = [
   { href: '/exports',       label: 'Data Export',   icon: FileSpreadsheet,description: 'Excel, PDF, CSV, JSON' },
   { href: '/query-builder', label: 'Query Builder', icon: Filter,          description: 'Visual no-SQL explorer' },
   { href: '/charts',        label: 'Chart Sync',    icon: BarChart3,       description: 'Crosshair + annotations' },
+  { href: '/charts-advanced', label: 'Advanced Charts', icon: BarChart3, description: 'Candlestick, heatmap, treemap' },
   { href: '/stories',       label: 'Data Stories',  icon: Sparkles,        description: 'Auto-generated briefs' },
+  { href: '/ask',           label: 'Ask (NL Query)', icon: Sparkles,      description: 'Natural language → SQL' },
   { href: '/automate',      label: 'Automation',    icon: Zap,             description: 'Rules & scheduled jobs' },
   { href: '/notifications', label: 'Notifications', icon: MessageSquare,   description: 'Email + webhooks' },
   { href: '/pricing',       label: 'Pricing & Limits', icon: DollarSign,   description: 'Free tier + upgrade' },
   { href: '/connectors',    label: 'Connectors',     icon: Database,        description: '18 data source providers' },
   { href: '/components',    label: 'UI Components',  icon: Code2,           description: 'Reusable building blocks' },
   { href: '/settings',      label: 'Settings',      icon: Settings,        description: 'API keys & preferences' },
+  { href: '/backup',        label: 'Backup & Restore', icon: Settings,     description: 'Export/import local data' },
 ]
 
 const BOTTOM_NAV: NavItem[] = [
