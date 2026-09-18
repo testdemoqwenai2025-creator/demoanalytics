@@ -1,0 +1,75 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# local env files
+.env*.local
+.env
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma
+/prisma/migrations/dev.db*
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# OS
+Thumbs.db
+
+# z scripts internal
+.zscripts/
+
+# worklog
+worklog.md
+
+# tool-results (claude tool scratch)
+tool-results/
+
+# dev server log (live)
+dev.log
+server.log
+
+# skills directory (PDF / other skills not part of this repo)
+skills/
+
+# pdf skill scripts (irrelevant to this repo)
+/scripts/cover.html
+/scripts/cover.pdf
+/scripts/body.pdf
+/scripts/diagram_*.html
+/scripts/diagram_*.png
+/scripts/chart_*.png
+/scripts/render_*.py
+/scripts/build_body.py
+/scripts/merge_final.py
+/download/
+
+# tests (sandbox-only)
+/tests/
+
