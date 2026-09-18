@@ -4,7 +4,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import {
   ArrowRight, Activity, Shield, Zap, Database, Brain, GitBranch,
-  TrendingUp, CheckCircle2, ChevronRight, Newspaper, FolderOpen, DollarSign,
+  TrendingUp, CheckCircle2, ChevronRight, Newspaper, FolderOpen, DollarSign, Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -107,6 +107,7 @@ export default function HomePage() {
           <FeatureCard icon={TrendingUp} title="Live Markets" description="Real crypto (CoinGecko), FX (Frankfurter), and synthetic equity data — all free." href="/markets" />
           <FeatureCard icon={Newspaper} title="News Feeds" description="RSS from 10 financial + tech sources. Filter, search, and preview articles." href="/news" />
           <FeatureCard icon={FolderOpen} title="File Management" description="Upload, preview (CSV/JSON/image), and download data files. Client-side processing." href="/files" />
+          <FeatureCard icon={Sparkles} title="Data Stories" description="The first dashboard that explains itself — auto-generated narrative briefs. No LLM, pure stats." href="/stories" />
           <FeatureCard icon={Zap} title="Automation Rules" description="Visual rule builder, scheduled jobs, alert routing — all mock, all working." href="/automate" />
           <FeatureCard icon={DollarSign} title="Pricing & Limits" description="Free-tier usage tracking per provider with upgrade prompts when limits are approached." href="/pricing" />
           <FeatureCard icon={Shield} title="Governance & Lineage" description="Runtime lineage graph, audit log, and OPA policy samples for regulator queries." href="/dashboard" />

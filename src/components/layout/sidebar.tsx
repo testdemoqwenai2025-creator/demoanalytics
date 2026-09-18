@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, LayoutDashboard, TrendingUp, Zap, Book, Info, LogIn,
   ChevronRight, Database, Workflow, Activity, Brain, Bell, ShieldAlert, GitBranch,
-  FileText, DollarSign, Settings, Newspaper, FolderOpen,
+  FileText, DollarSign, Settings, Newspaper, FolderOpen, Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useDashboardStore, type DashboardSectionId } from '@/lib/store'
@@ -24,6 +24,7 @@ const TOP_NAV: NavItem[] = [
   { href: '/markets',    label: 'Live Markets', icon: TrendingUp,     description: 'Crypto, FX, equities' },
   { href: '/news',       label: 'News Feeds',   icon: Newspaper,       description: 'RSS from 10 sources' },
   { href: '/files',      label: 'Files',        icon: FolderOpen,      description: 'Upload, preview, download' },
+  { href: '/stories',    label: 'Data Stories', icon: Sparkles,        description: 'Auto-generated briefs' },
   { href: '/automate',   label: 'Automation',   icon: Zap,             description: 'Rules & scheduled jobs' },
   { href: '/pricing',    label: 'Pricing & Limits', icon: DollarSign, description: 'Free tier + upgrade' },
   { href: '/settings',   label: 'Settings',     icon: Settings,        description: 'API keys & preferences' },
@@ -56,6 +57,7 @@ export function Sidebar() {
   const setSidebarOpen = useDashboardStore(s => s.setSidebarOpen)
   const isAuthenticated = useDashboardStore(s => s.isAuthenticated)
   const userEmail = useDashboardStore(s => s.userEmail)
+  const userRole = useDashboardStore(s => s.userRole)
   const logout = useDashboardStore(s => s.logout)
 
   const isOnDashboard = pathname === '/dashboard' || pathname.startsWith('/dashboard/')
@@ -144,32 +146,30 @@ export function Sidebar() {
           {isAuthenticated ? (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-bold">
+                <div className={`flex h-6 w-6 items-center justify-center rounded-full text-white text-[10px] font-bold ${
+                  userRole === 'admin' ? 'bg-primary' : 'bg-emerald-500'
+                }`}>
                   {userEmail?.[0]?.toUpperCase() || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{userEmail}</div>
-                  <div className="text-[10px] text-muted-foreground">mock auth</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {userRole === 'admin' ? '🛡 Admin access' : '👁 Demo (read-only)'}
+                  </div>
                 </div>
-                <button
-                  onClick={logout}
-                  className="text-[10px] text-muted-foreground hover:text-foreground"
-                >
+                <button onClick={logout} className="text-[10px] text-muted-foreground hover:text-foreground">
                   Sign out
                 </button>
               </div>
             </div>
           ) : (
-            <Link
-              href="/login"
-              onClick={() => setSidebarOpen(false)}
-              className="w-full text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5"
-            >
+            <Link href="/login" onClick={() => setSidebarOpen(false)}
+              className="w-full text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5">
               <LogIn className="h-3 w-3" />
               Not signed in (mock)
             </Link>
           )}
-          <div className="mt-2 text-[10px] text-muted-foreground">v1.0 &middot; synthetic data</div>
+          <div className="mt-2 text-[10px] text-muted-foreground">v1.1 · MPA + roles</div>
         </div>
       </aside>
     </>

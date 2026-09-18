@@ -26,10 +26,11 @@ interface DashboardState {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
 
-  // Mock auth (persisted to localStorage)
+  // Mock auth with roles (persisted to localStorage)
   isAuthenticated: boolean
   userEmail: string | null
-  login: (email: string) => void
+  userRole: 'demo' | 'admin' | null
+  login: (email: string, role: 'demo' | 'admin') => void
   logout: () => void
 
   // API keys (persisted to localStorage, never transmitted except to provider)
@@ -55,19 +56,23 @@ const AUTH_KEY = 'meridian-mock-auth'
 const API_KEYS_KEY = 'meridian-api-keys'
 const USAGE_KEY = 'meridian-api-usage'
 
-function loadAuth(): { isAuthenticated: boolean; userEmail: string | null } {
-  if (typeof window === 'undefined') return { isAuthenticated: false, userEmail: null }
+function loadAuth(): { isAuthenticated: boolean; userEmail: string | null; userRole: 'demo' | 'admin' | null } {
+  if (typeof window === 'undefined') return { isAuthenticated: false, userEmail: null, userRole: null }
   try {
     const raw = window.localStorage.getItem(AUTH_KEY)
-    if (!raw) return { isAuthenticated: false, userEmail: null }
+    if (!raw) return { isAuthenticated: false, userEmail: null, userRole: null }
     const parsed = JSON.parse(raw)
-    return { isAuthenticated: Boolean(parsed.isAuthenticated), userEmail: parsed.userEmail || null }
-  } catch { return { isAuthenticated: false, userEmail: null } }
+    return {
+      isAuthenticated: Boolean(parsed.isAuthenticated),
+      userEmail: parsed.userEmail || null,
+      userRole: parsed.userRole || null,
+    }
+  } catch { return { isAuthenticated: false, userEmail: null, userRole: null } }
 }
 
-function saveAuth(isAuthenticated: boolean, userEmail: string | null) {
+function saveAuth(isAuthenticated: boolean, userEmail: string | null, userRole: 'demo' | 'admin' | null) {
   if (typeof window === 'undefined') return
-  try { window.localStorage.setItem(AUTH_KEY, JSON.stringify({ isAuthenticated, userEmail })) } catch {}
+  try { window.localStorage.setItem(AUTH_KEY, JSON.stringify({ isAuthenticated, userEmail, userRole })) } catch {}
 }
 
 function loadApiKeys(): ApiKeyStore {
@@ -111,13 +116,14 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   isAuthenticated: initialAuth.isAuthenticated,
   userEmail: initialAuth.userEmail,
-  login: (email) => {
-    saveAuth(true, email)
-    set({ isAuthenticated: true, userEmail: email })
+  userRole: initialAuth.userRole,
+  login: (email, role) => {
+    saveAuth(true, email, role)
+    set({ isAuthenticated: true, userEmail: email, userRole: role })
   },
   logout: () => {
-    saveAuth(false, null)
-    set({ isAuthenticated: false, userEmail: null })
+    saveAuth(false, null, null)
+    set({ isAuthenticated: false, userEmail: null, userRole: null })
   },
 
   apiKeys: initialApiKeys,

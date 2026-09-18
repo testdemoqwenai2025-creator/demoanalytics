@@ -32,6 +32,7 @@ export function SiteFooter() {
               <li><Link href="/markets" className="text-muted-foreground hover:text-foreground">Live Markets</Link></li>
               <li><Link href="/news" className="text-muted-foreground hover:text-foreground">News Feeds</Link></li>
               <li><Link href="/files" className="text-muted-foreground hover:text-foreground">Files</Link></li>
+              <li><Link href="/stories" className="text-muted-foreground hover:text-foreground">Data Stories</Link></li>
               <li><Link href="/automate" className="text-muted-foreground hover:text-foreground">Automation</Link></li>
             </ul>
           </div>

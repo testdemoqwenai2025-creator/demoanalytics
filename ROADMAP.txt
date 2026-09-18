@@ -1,0 +1,646 @@
+================================================================================
+  MERIDIAN · Data Analyst Template — Improvement Roadmap
+  Generated: 2026-09-18
+  Repository: https://github.com/testdemoqwenai2025-creator/dataanalysistemplate
+  Public preview: https://testdemoqwenai2025-creator.github.io/demoanalytics/
+================================================================================
+
+TABLE OF CONTENTS
+────────────────────────────────────────────────────────────────────────────────
+1. Current State (what's already built)
+2. Immediate Improvements (ranked by leverage)
+3. The "Data Stories" Feature (creative centerpiece)
+4. Plugin Architecture (extensibility)
+5. Role-Based Access (demo / admin / enterprise)
+6. Long-Term Vision
+7. Implementation Priority Matrix
+8. Fork Scenarios (this template → other domains)
+
+================================================================================
+1. CURRENT STATE
+================================================================================
+
+What's live right now (11 routes):
+
+  /            Home (landing with hero, CTAs, architecture overview)
+  /dashboard   9-section synthetic tick lakehouse (overview, datasets, explorer,
+               pipelines, ticks, models, alerts, governance, incidents)
+  /markets     Live crypto (CoinGecko) + FX (Frankfurter) + synthetic equities
+  /news        RSS feeds from 10 financial + tech sources (CNBC, BBC, NPR,
+               WSJ, Yahoo Finance, Investing.com, FT, TechCrunch, Verge, HN)
+  /files       Drag-drop upload, CSV/JSON/image preview, CSV export
+  /automate    Mock rule builder + scheduled jobs
+  /pricing     7-provider free-tier usage tracking + upgrade prompts
+  /settings    API key management (localStorage), theme, data source toggles
+  /about       Project info + GDPR privacy notice
+  /docs        Quick reference + customization guide
+  /login       Mock auth form (no credentials transmitted)
+
+Architecture:
+  - Next.js 16 App Router (MPA, not SPA)
+  - TypeScript 5, Tailwind CSS 4, shadcn/ui (73 components)
+  - Prisma + SQLite (15 models, synthetic seed: ~13K ticks, ~5K OHLCV bars)
+  - Zustand store (auth, API keys, usage tracking — all localStorage-persisted)
+  - Dual-mode deployment: standalone (dev) or static export (GitHub Pages)
+  - Provider registry pattern (src/lib/data-sources.ts) — add a provider by
+    adding one object to an array; Pricing + Settings pages auto-update
+  - Static fallback data (src/lib/static-fallback.ts) — renders synthetic
+    data when API routes unavailable on GitHub Pages
+
+Stats:
+  - ~12,153 lines of TypeScript/TSX
+  - 11 routes, 73 components, 16 API routes (private repo)
+  - 7 data providers integrated (3 active, 4 ready to activate with API keys)
+  - 10 RSS sources (7 financial, 3 tech)
+  - Both repos on GitHub, public preview deployed via GitHub Actions
+
+================================================================================
+2. IMMEDIATE IMPROVEMENTS (ranked by leverage)
+================================================================================
+
+Each item below includes: what it unlocks, estimated effort, and dependencies.
+
+────────────────────────────────────────────────────────────────────────────────
+#1  REAL AUTHENTICATION + MULTI-TENANT
+────────────────────────────────────────────────────────────────────────────────
+
+What it unlocks:
+  - Per-user saved queries, files, dashboard layouts
+  - Shared workspaces (multiple analysts on one instance)
+  - Audit trail tied to real users (not mock)
+  - Per-user API key vault (encrypted at rest)
+  - Role-based feature gating (demo vs admin vs enterprise)
+
+Implementation:
+  - NextAuth.js v4 (already in package.json) with GitHub OAuth provider
+  - Prisma User model (already exists — just extend with role field)
+  - Session provider in root layout
+  - Middleware to protect /settings, /files (write ops) for authenticated users
+  - Demo account: demo@meridian.template / demo123 (role: 'demo')
+  - Admin account: admin@meridian.template / admin123 (role: 'admin')
+
+Effort: ~2 hours
+Dependencies: None (NextAuth is installed)
+
+Role matrix:
+  Feature                    Demo    Admin    Enterprise
+  ─────────────────────────  ────   ─────    ──────────
+  View dashboards            ✓       ✓         ✓
+  Live markets data          ✓       ✓         ✓
+  News feeds                 ✓       ✓         ✓
+  Upload files               ✗       ✓         ✓
+  Export data (CSV/JSON)     ✓       ✓         ✓
+  Manage API keys            ✗       ✓         ✓
+  Configure data sources     ✗       ✓         ✓
+  View audit log             ✗       ✓         ✓
+  Manage users               ✗       ✗         ✓
+  Custom plugins             ✗       ✗         ✓
+  SSO (SAML/OIDC)            ✗       ✗         ✓
+
+────────────────────────────────────────────────────────────────────────────────
+#2  REAL DATABASE ON PUBLIC PREVIEW
+────────────────────────────────────────────────────────────────────────────────
+
+What it unlocks:
+  - Live API routes on the public site (no more synthetic fallback)
+  - Real Prisma + PostgreSQL
+  - The seeder populates real data on the public site
+  - Markets page can use server-side proxy (avoids CORS issues)
+  - Saved queries persist across devices (with auth)
+
+Implementation:
+  - Sign up for Neon free Postgres (or Supabase, Railway)
+  - Update DATABASE_URL in .env
+  - Change Prisma provider from sqlite to postgresql
+  - Deploy private repo to Vercel (free tier) or Render (free tier)
+  - Keep public repo on GitHub Pages for the static marketing pages
+  - Point the deployed app's API routes at the real database
+
+Effort: ~1 hour
+Dependencies: #1 (auth) for multi-user, but works standalone for single-user
+
+────────────────────────────────────────────────────────────────────────────────
+#3  PLUGIN SYSTEM (auto-discovery)
+────────────────────────────────────────────────────────────────────────────────
+
+What it unlocks:
+  - Drop-in extensibility: add a folder, get a new page + nav entry + API
+  - Non-developers can add data sources (just edit plugin.json)
+  - Third-party plugins (community contributions)
+  - Per-instance plugin enable/disable (enterprise feature)
+
+Implementation:
+  src/plugins/
+    <plugin-name>/
+      plugin.json     # metadata: title, icon, nav order, permissions, deps
+      page.tsx        # the page component (default export)
+      api/            # optional API routes
+      components/     # plugin-specific components
+      README.md       # plugin docs
+
+  plugin.json schema:
+  {
+    "name": "weather",
+    "title": "Weather",
+    "description": "NOAA + OpenWeather data",
+    "icon": "cloud",
+    "navOrder": 5,
+    "requiredRole": "demo",
+    "dataSources": ["noaa", "openweather"],
+    "version": "1.0.0"
+  }
+
+  A registry scans src/plugins/*/plugin.json at build time and generates:
+  - Sidebar entries (auto-sorted by navOrder)
+  - Route handlers (/plugins/<name>)
+  - Search index entries
+  - Settings page toggles
+
+Effort: ~4 hours
+Dependencies: None
+
+────────────────────────────────────────────────────────────────────────────────
+#4  "DATA STORIES" — AUTO-GENERATED NARRATIVE BRIEF (THE CREATIVE FEATURE)
+────────────────────────────────────────────────────────────────────────────────
+
+What it unlocks:
+  - A "morning brief" that reads the dashboard and writes a 200-word summary
+  - Anomaly detection (statistical, no ML needed)
+  - Trend analysis ("AAPL up 3.2% — largest gain in 14 days")
+  - Correlation discovery ("BTC and ETH moved together r=0.94")
+  - Plain-English explanations of chart patterns
+  - Voice-readable (for accessibility / hands-free use)
+
+Why it's novel:
+  - Most dashboards show data; this one EXPLAINS it
+  - No LLM dependency — pure template-based narrative generation
+  - Runs entirely client-side (works on GitHub Pages)
+  - Updates as data changes (live re-generation)
+  - Different "voice" modes: executive brief, analyst notes, compliance log
+
+Implementation:
+  src/lib/story-engine/
+    patterns.ts       # pattern matchers (spike, trend, correlation, anomaly)
+    narrative.ts      # template-based natural language generation
+    brief-builder.ts  # assembles sections into a coherent brief
+    voices.ts         # executive / analyst / compliance voice presets
+
+  src/app/(app)/stories/page.tsx   # the Stories page
+  src/components/stories/
+    BriefCard.tsx     # renders a generated brief
+    PatternCard.tsx   # shows detected patterns
+    TimelineEvent.tsx # narrative timeline of detected events
+
+Effort: ~6 hours
+Dependencies: None (works with synthetic fallback data)
+
+Story patterns to detect:
+  1. SPIKE     — value exceeds 2 standard deviations from rolling mean
+  2. TREND     — monotonic change over N periods (up or down)
+  3. CORRELATION — two series move together (Pearson r > 0.7)
+  4. REGIME CHANGE — volatility shifts by >50%
+  5. ANOMALY   — value outside historical min/max range
+  6. CLUSTER   — multiple alerts fire in same time window
+  7. RECOVERY  — system returns to normal after incident
+  8. DEGRADATION — gradual decline over multiple periods
+
+Voice presets:
+  EXECUTIVE:  "Q3 revenue grew 12% to $4.2M, driven by a 3.2% gain in AAPL..."
+  ANALYST:    "Detected spike in ticks.normalized at 14:06 UTC. Magnitude: 2.3σ..."
+  COMPLIANCE: "Audit log shows 3 denied access attempts in the last 24h..."
+
+────────────────────────────────────────────────────────────────────────────────
+#5  SAVED DASHBOARDS + CUSTOM LAYOUTS
+────────────────────────────────────────────────────────────────────────────────
+
+What it unlocks:
+  - Users pin specific sections, reorder them, save the layout
+  - Multiple saved layouts ("morning routine", "incident response", "EOD")
+  - Share layouts via URL (encoded state)
+  - Per-user default layout
+
+Implementation:
+  - Drag-and-drop with @dnd-kit/sortable (already installed)
+  - Save layout to localStorage (or user profile with auth)
+  - URL-encoded state for sharing: /dashboard?layout=overview,pipelines,alerts
+
+Effort: ~3 hours
+Dependencies: None for localStorage; #1 for cross-device sync
+
+────────────────────────────────────────────────────────────────────────────────
+#6  REAL-TIME DATA STREAMING (WebSocket)
+────────────────────────────────────────────────────────────────────────────────
+
+What it unlocks:
+  - Live tick updates (no polling)
+  - Live alert notifications (push, not poll)
+  - Collaborative cursors (see where other users are looking)
+
+Implementation:
+  - Mini-service on port 3003 (per skill instructions)
+  - Proxy Binance WebSocket → browser via socket.io
+  - Frontend: io('/?XTransformPort=3003')
+
+Effort: ~2 hours
+Dependencies: #2 (real backend) for the WebSocket server
+
+────────────────────────────────────────────────────────────────────────────────
+#7  CHART ANNOTATIONS + CROSSHAIR SYNC
+────────────────────────────────────────────────────────────────────────────────
+
+What it unlocks:
+  - Crosshair sync across multiple charts (hover one, all highlight same time)
+  - Annotations for events ("FOMC announcement here", "incident started here")
+  - Drawing tools (trend lines, support/resistance levels)
+
+Implementation:
+  - Switch from Recharts to ECharts or visx for advanced features
+  - Or: keep Recharts + add a sync context (shared hover state)
+
+Effort: ~6 hours (Recharts sync) or ~12 hours (ECharts migration)
+Dependencies: None
+
+────────────────────────────────────────────────────────────────────────────────
+#8  VISUAL QUERY BUILDER (no-SQL data explorer)
+────────────────────────────────────────────────────────────────────────────────
+
+What it unlocks:
+  - Non-technical users can build queries (drag columns, set filters, join)
+  - Saves to saved queries (with auth)
+  - Pattern: dbt's visual modeler or Metabase's question builder
+
+Implementation:
+  - Drag-and-drop column selection
+  - Filter chips (column, operator, value)
+  - Live preview of results
+  - Export to SQL (for power users)
+
+Effort: ~8 hours
+Dependencies: None
+
+────────────────────────────────────────────────────────────────────────────────
+#9  EXPORT TO MULTIPLE FORMATS
+────────────────────────────────────────────────────────────────────────────────
+
+What it unlocks:
+  - Excel (.xlsx with formatted sheets, multiple tabs)
+  - PDF reports (with the pdf skill — already used for the whitepaper)
+  - Parquet for big data pipelines
+
+Implementation:
+  - xlsx library for Excel
+  - pdf skill (already in /home/z/my-project/skills/pdf/) for PDF
+  - parquet-wasm for Parquet
+
+Effort: ~3 hours
+Dependencies: None
+
+────────────────────────────────────────────────────────────────────────────────
+#10 NOTIFICATION SYSTEM (email + webhook)
+────────────────────────────────────────────────────────────────────────────────
+
+What it unlocks:
+  - Alert rules actually fire (not mock)
+  - Email notifications (Resend free tier, 100/day)
+  - Slack/Discord webhooks (free)
+  - Generic HTTP webhook for custom integrations
+
+Implementation:
+  - Wire the Automation page's rules to real action handlers
+  - Server-side: Resend API for email
+  - Client-side: fetch() to user-configured webhooks
+
+Effort: ~2 hours
+Dependencies: #2 (real backend) for email sending
+
+────────────────────────────────────────────────────────────────────────────────
+#11 PWA (Progressive Web App)
+────────────────────────────────────────────────────────────────────────────────
+
+What it unlocks:
+  - Installable on iOS/Android home screen
+  - Offline support for static pages
+  - Push notifications (with service worker)
+
+Implementation:
+  - next-pwa or manual service worker
+  - manifest.json (already have most of the metadata)
+  - Cache static assets for offline use
+
+Effort: ~2 hours
+Dependencies: None
+
+================================================================================
+3. THE "DATA STORIES" FEATURE (detailed design)
+================================================================================
+
+This is the creative centerpiece — the thing that makes this template different
+from every other dashboard template out there.
+
+CONCEPT
+───────
+Most dashboards show you data and expect you to interpret it. Data Stories
+reads the data for you and writes a plain-English narrative of what's happening.
+Think of it as an automated analyst that writes a morning brief.
+
+The key insight: you don't need an LLM to generate useful narratives. Most
+analyst commentary follows predictable patterns:
+  - "X rose by Y% to Z, the largest gain since [date]"
+  - "Alert A fired at [time], caused by [pattern]"
+  - "Series X and Y are correlated (r=0.94) over the last N periods"
+
+These patterns can be detected statistically and rendered as natural language
+with simple templates. No API calls, no latency, no cost.
+
+DETECTED PATTERNS
+─────────────────
+1. SPIKE         — value > 2σ from rolling mean
+2. TREND         — monotonic change over N+ periods
+3. CORRELATION   — Pearson r > 0.7 between two series
+4. REGIME_CHANGE — volatility shifts by >50%
+5. ANOMALY       — value outside historical min/max
+6. CLUSTER       — multiple alerts in same time window
+7. RECOVERY      — system returns to normal after incident
+8. DEGRADATION   — gradual decline over multiple periods
+
+VOICE PRESETS
+─────────────
+EXECUTIVE:    High-level, dollar amounts, percentages, business impact
+              "Q3 revenue grew 12% to $4.2M, driven by..."
+
+ANALYST:      Technical, precise, timestamps, statistical measures
+              "Detected spike in ticks.normalized at 14:06 UTC.
+               Magnitude: 2.3σ above rolling 1h mean..."
+
+COMPLIANCE:   Formal, audit-focused, actor/action/resource
+              "Audit log shows 3 denied access attempts in the last 24h.
+               Actor: research@. Resources: ticks.normalized, ohlcv.1m..."
+
+BRIEF STRUCTURE
+───────────────
+1. HEADLINE (1 sentence summary of the most important thing)
+2. KEY METRICS (3-5 bullets of notable numbers)
+3. PATTERNS DETECTED (list of patterns with evidence)
+4. ALERTS (active alerts with context)
+5. RECOMMENDED ACTIONS (template-based, tied to patterns)
+
+Example output:
+──────────────
+HEADLINE: Tier-1 SLO budget at 38% — on track to exhaust in 18 days
+at current burn rate.
+
+KEY METRICS:
+  • 100B events ingested today (within normal range)
+  • p99 latency: 217ms (below 250ms SLO ceiling)
+  • 2 active alerts (1 critical, 1 warning)
+  • Aggregate pipeline lag: 305ms (degraded, investigate)
+
+PATTERNS DETECTED:
+  • SPIKE: Aggregate checkpoint duration exceeded 2σ at 14:02 UTC
+  • CORRELATION: AAPL and MSFT moved together (r=0.91) over last 24h
+  • DEGRADATION: Aggregate pipeline lag trending up over 6h (+47%)
+
+ACTIVE ALERTS:
+  • CRITICAL: Aggregate checkpoint > 60s (firing 3m ago)
+  • WARNING: Manifest lock contention (firing 8m ago)
+
+RECOMMENDED ACTIONS:
+  1. Investigate Aggregate pipeline checkpoint storm (see incident: April 2024)
+  2. Review compaction service backpressure configuration
+  3. Consider pausing non-critical feature deploys until SLO recovers
+
+================================================================================
+4. PLUGIN ARCHITECTURE (detailed design)
+================================================================================
+
+GOAL
+────
+Make the template extensible without touching core files. A plugin is a
+self-contained folder that adds a page, nav entry, and optional API routes.
+
+STRUCTURE
+─────────
+src/plugins/
+  weather/
+    plugin.json        # metadata
+    page.tsx           # the page (default export)
+    api/
+      forecast.ts      # optional API routes
+    components/
+      WeatherCard.tsx  # plugin-specific components
+    README.md          # plugin docs
+
+  flights/
+    plugin.json
+    page.tsx
+    api/
+      opensky.ts
+    README.md
+
+plugin.json SCHEMA
+───────────────────
+{
+  "name": "weather",                    // unique identifier (kebab-case)
+  "title": "Weather",                   // display name
+  "description": "NOAA + OpenWeather data",
+  "icon": "cloud",                      // lucide-react icon name
+  "category": "environmental",          // for grouping in sidebar
+  "navOrder": 5,                        // sort order in sidebar
+  "requiredRole": "demo",               // minimum role to access
+  "dataSources": ["noaa", "openweather"], // providers this plugin uses
+  "version": "1.0.0",
+  "author": "MERIDIAN Team",
+  "homepage": "https://github.com/...",
+  "enabled": true                      // can be toggled in Settings
+}
+
+AUTO-DISCOVERY
+──────────────
+At build time, a script scans src/plugins/*/plugin.json and generates:
+  - src/lib/plugins-registry.ts (auto-generated, do not edit)
+  - Sidebar entries (sorted by navOrder, filtered by role)
+  - Route handlers (/plugins/<name>)
+  - Search index entries
+  - Settings page toggles (enable/disable per plugin)
+
+This means adding a new page to the template is:
+  1. Create src/plugins/<name>/plugin.json
+  2. Create src/plugins/<name>/page.tsx
+  3. Rebuild — done. Nav, search, routes all auto-wired.
+
+================================================================================
+5. ROLE-BASED ACCESS (demo / admin / enterprise)
+================================================================================
+
+THREE TIERS
+──────────
+
+DEMO (default, no login required):
+  - View all dashboards (read-only)
+  - View live markets data
+  - View news feeds
+  - Export data as CSV/JSON
+  - View pricing/limits
+  - Cannot: upload files, manage API keys, view audit log, configure sources
+
+ADMIN (login required):
+  - Everything demo can do, plus:
+  - Upload files
+  - Manage API keys (Settings page)
+  - Configure data sources
+  - View audit log
+  - Manage saved dashboards
+  - Configure automation rules
+
+ENTERPRISE (license key required):
+  - Everything admin can do, plus:
+  - Manage users (invite, revoke, assign roles)
+  - Custom plugins (install third-party plugins)
+  - SSO (SAML/OIDC)
+  - Audit log export (compliance)
+  - Custom branding (logo, colors, domain)
+
+LOGIN
+─────
+Demo account:     demo@meridian.template / demo
+Admin account:    admin@meridian.template / admin
+
+These are mock credentials (no backend). In production with #1 (NextAuth),
+these would be real GitHub OAuth accounts with role assignments.
+
+The login form will have a "Quick demo login" button that auto-fills demo
+credentials, and an "Admin login" toggle that reveals the admin field.
+
+================================================================================
+6. LONG-TERM VISION
+================================================================================
+
+PHASE 1 (current): Static preview + synthetic data
+  - GitHub Pages, no backend, synthetic fallback
+  - 11 pages, 7 data providers, 10 RSS sources
+  - Mock auth, localStorage persistence
+
+PHASE 2 (next): Real backend + auth
+  - Deploy to Vercel/Render with real Postgres
+  - NextAuth + GitHub OAuth
+  - Demo/Admin roles
+  - Live API routes on public site
+  - Real-time WebSocket updates
+
+PHASE 3: Plugin ecosystem
+  - Plugin auto-discovery
+  - Community plugin registry
+  - Third-party data source integrations
+  - Marketplace (enterprise feature)
+
+PHASE 4: AI-assisted analysis
+  - Data Stories (narrative briefs)
+  - Natural language query ("show me AAPL vs MSFT last week")
+  - Anomaly explanation ("why did this spike happen?")
+  - Predictive alerts ("likely to breach SLO in 2h")
+
+PHASE 5: Collaboration
+  - Shared dashboards
+  - Live cursors (see where teammates are looking)
+  - Comments on charts (anchored to data points)
+  - Real-time co-editing of saved queries
+
+================================================================================
+7. IMPLEMENTATION PRIORITY MATRIX
+================================================================================
+
+  Impact
+    ↑
+  H │  ┌─────────────┐  ┌─────────────┐
+  i │  │ #1 Auth     │  │ #4 Stories  │
+  g │  │ #2 DB       │  │ (creative)  │
+  h │  └─────────────┘  └─────────────┘
+    │  ┌─────────────┐  ┌─────────────┐
+    │  │ #5 Saved    │  │ #3 Plugins  │
+    │  │ Dashboards  │  │             │
+  M │  └─────────────┘  └─────────────┘
+  e │  ┌─────────────┐  ┌─────────────┐
+  d │  │ #10 Notif   │  │ #6 WebSocket│
+  i │  │ #11 PWA     │  │ #7 Charts   │
+  u │  └─────────────┘  └─────────────┘
+  m │
+    │  ┌─────────────┐
+  L │  │ #8 Query    │  (high effort, lower leverage)
+  o │  │ Builder     │
+  w │  └─────────────┘
+    └──────────────────────────────────→ Effort
+       Low (1-2h)    Medium (3-6h)    High (8h+)
+
+RECOMMENDED ORDER:
+  1. #4 Data Stories (creative, high impact, no dependencies)  ← START HERE
+  2. #1 Auth + roles (unlocks multi-user)
+  3. #3 Plugin system (unlocks extensibility)
+  4. #2 Real DB (unlocks live data on public site)
+  5. #5 Saved dashboards (unlocks personalization)
+  6. #11 PWA (quick win, installable)
+  7. #10 Notifications (unlocks real automation)
+  8. #6 WebSocket (unlocks real-time)
+  9. #7 Chart annotations (unlocks advanced viz)
+  10. #8 Query builder (unlocks non-technical users)
+  11. #9 Export formats (unlocks external tool integration)
+
+================================================================================
+8. FORK SCENARIOS (this template → other domains)
+================================================================================
+
+The template is domain-agnostic. The fintech theme is just one instance.
+With ~30 minutes of work each, you could fork it into:
+
+HEALTHCARE OPS DASHBOARD
+  - data-sources.ts: FHIR APIs, NHS, OpenFDA, CDC
+  - Swap "ticks" for "patient events"
+  - "pipelines" → "care pathways"
+  - Markets → "patient outcomes"
+  - News → "medical journal RSS" (PubMed, NEJM, BMJ)
+
+E-COMMERCE ANALYTICS
+  - data-sources.ts: Shopify, WooCommerce, Stripe, Amazon Seller
+  - Swap "ticks" for "orders"
+  - "pipelines" → "fulfillment flows"
+  - Markets → "sales by SKU"
+  - News → "product reviews RSS"
+
+DEVOPS / SRE CONSOLE
+  - data-sources.ts: Prometheus, Grafana, Datadog, PagerDuty APIs
+  - Swap "ticks" for "metrics"
+  - "pipelines" → "deploy pipelines"
+  - Markets → "service health"
+  - Alerts already fit
+  - Incidents already fit
+  - Governance → "runbooks"
+
+CLIMATE / ESG DASHBOARD
+  - data-sources.ts: NOAA, OpenWeather, NASA POWER, OpenAQ
+  - Swap "ticks" for "sensor readings"
+  - "pipelines" → "data collection pipelines"
+  - Markets → "carbon prices"
+  - News → "climate news RSS"
+
+RESEARCH / ACADEMIC PORTAL
+  - data-sources.ts: arXiv, Crossref, OpenAlex, Semantic Scholar
+  - Swap "ticks" for "citations"
+  - "pipelines" → "research workflows"
+  - Markets → "h-index trends"
+  - News → "arXiv RSS"
+
+Each fork reuses: all 11 page structures, layout, files upload, pricing
+infrastructure, settings, auth, plugin system, Data Stories engine.
+
+================================================================================
+END OF ROADMAP
+================================================================================
+
+For questions or contributions:
+  - Private repo: https://github.com/testdemoqwenai2025-creator/dataanalysistemplate
+  - Public preview: https://testdemoqwenai2025-creator.github.io/demoanalytics/
+  - Create an issue on either repo
+
+License: MIT — fork freely, just keep the attribution.
+
+— MERIDIAN Team
+================================================================================
