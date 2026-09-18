@@ -1,0 +1,11 @@
+{
+  "name": "meridian-tick-service",
+  "version": "1.0.0",
+  "description": "WebSocket service for live tick streaming (MERIDIAN template)",
+  "scripts": {
+    "dev": "bun --hot index.ts"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.3"
+  }
+}

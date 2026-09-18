@@ -6,10 +6,12 @@ import { usePathname } from 'next/navigation'
 import {
   Home, LayoutDashboard, TrendingUp, Zap, Book, Info, LogIn,
   ChevronRight, Database, Workflow, Activity, Brain, Bell, ShieldAlert, GitBranch,
-  FileText, DollarSign, Settings, Newspaper, FolderOpen, Sparkles,
+  FileText, DollarSign, Settings, Newspaper, FolderOpen, Sparkles, Puzzle,
+  Radio, FileSpreadsheet, Layout, Filter, MessageSquare, BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useDashboardStore, type DashboardSectionId } from '@/lib/store'
+import { getPluginsForRole, getPluginIcon } from '@/lib/plugins'
 
 interface NavItem {
   href: string
@@ -19,15 +21,21 @@ interface NavItem {
 }
 
 const TOP_NAV: NavItem[] = [
-  { href: '/',           label: 'Home',         icon: Home,            description: 'Landing page' },
-  { href: '/dashboard',  label: 'Dashboard',    icon: LayoutDashboard, description: 'Synthetic tick lakehouse' },
-  { href: '/markets',    label: 'Live Markets', icon: TrendingUp,     description: 'Crypto, FX, equities' },
-  { href: '/news',       label: 'News Feeds',   icon: Newspaper,       description: 'RSS from 10 sources' },
-  { href: '/files',      label: 'Files',        icon: FolderOpen,      description: 'Upload, preview, download' },
-  { href: '/stories',    label: 'Data Stories', icon: Sparkles,        description: 'Auto-generated briefs' },
-  { href: '/automate',   label: 'Automation',   icon: Zap,             description: 'Rules & scheduled jobs' },
-  { href: '/pricing',    label: 'Pricing & Limits', icon: DollarSign, description: 'Free tier + upgrade' },
-  { href: '/settings',   label: 'Settings',     icon: Settings,        description: 'API keys & preferences' },
+  { href: '/',              label: 'Home',          icon: Home,            description: 'Landing page' },
+  { href: '/dashboard',     label: 'Dashboard',     icon: LayoutDashboard, description: 'Synthetic tick lakehouse' },
+  { href: '/layouts',      label: 'Saved Layouts', icon: Layout,          description: 'Custom dashboard layouts' },
+  { href: '/markets',       label: 'Live Markets',  icon: TrendingUp,      description: 'Crypto, FX, equities' },
+  { href: '/live',          label: 'Live Updates',  icon: Radio,           description: 'WebSocket tick stream' },
+  { href: '/news',          label: 'News Feeds',    icon: Newspaper,       description: 'RSS from 10 sources' },
+  { href: '/files',         label: 'Files',         icon: FolderOpen,      description: 'Upload, preview, download' },
+  { href: '/exports',       label: 'Data Export',   icon: FileSpreadsheet,description: 'Excel, PDF, CSV, JSON' },
+  { href: '/query-builder', label: 'Query Builder', icon: Filter,          description: 'Visual no-SQL explorer' },
+  { href: '/charts',        label: 'Chart Sync',    icon: BarChart3,       description: 'Crosshair + annotations' },
+  { href: '/stories',       label: 'Data Stories',  icon: Sparkles,        description: 'Auto-generated briefs' },
+  { href: '/automate',      label: 'Automation',    icon: Zap,             description: 'Rules & scheduled jobs' },
+  { href: '/notifications', label: 'Notifications', icon: MessageSquare,   description: 'Email + webhooks' },
+  { href: '/pricing',       label: 'Pricing & Limits', icon: DollarSign,   description: 'Free tier + upgrade' },
+  { href: '/settings',      label: 'Settings',      icon: Settings,        description: 'API keys & preferences' },
 ]
 
 const BOTTOM_NAV: NavItem[] = [
@@ -59,6 +67,9 @@ export function Sidebar() {
   const userEmail = useDashboardStore(s => s.userEmail)
   const userRole = useDashboardStore(s => s.userRole)
   const logout = useDashboardStore(s => s.logout)
+
+  const roleLabel = userRole === 'enterprise' ? '🏢 Enterprise' : userRole === 'admin' ? '🛡 Admin access' : '👁 Demo (read-only)'
+  const roleColor = userRole === 'enterprise' ? 'bg-violet-500' : userRole === 'admin' ? 'bg-primary' : 'bg-emerald-500'
 
   const isOnDashboard = pathname === '/dashboard' || pathname.startsWith('/dashboard/')
 
@@ -129,6 +140,42 @@ export function Sidebar() {
             </div>
           )}
 
+          {/* Plugins (auto-discovered) */}
+          {getPluginsForRole(userRole).length > 0 && (
+            <div className="pt-2 mt-2 border-t">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-3 py-1 flex items-center gap-1">
+                <Puzzle className="h-3 w-3" /> Plugins
+              </div>
+              {getPluginsForRole(userRole).map(plugin => {
+                const Icon = getPluginIcon(plugin.icon)
+                const href = `/plugins/${plugin.name}`
+                const isActive = pathname === href
+                return (
+                  <Link
+                    key={plugin.name}
+                    href={href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      'group flex items-start gap-3 rounded-md px-3 py-2 text-left transition-colors w-full',
+                      isActive
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                        : 'hover:bg-sidebar-accent/60'
+                    )}
+                  >
+                    <Icon className={cn(
+                      'mt-0.5 h-4 w-4 shrink-0',
+                      isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                    )} />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-sm font-medium leading-tight">{plugin.title}</span>
+                      <span className="text-[10px] text-muted-foreground line-clamp-1">{plugin.description}</span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+
           <div className="pt-2 mt-2 border-t">
             {BOTTOM_NAV.map(item => (
               <NavItem
@@ -146,16 +193,12 @@ export function Sidebar() {
           {isAuthenticated ? (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs">
-                <div className={`flex h-6 w-6 items-center justify-center rounded-full text-white text-[10px] font-bold ${
-                  userRole === 'admin' ? 'bg-primary' : 'bg-emerald-500'
-                }`}>
+                <div className={`flex h-6 w-6 items-center justify-center rounded-full text-white text-[10px] font-bold ${roleColor}`}>
                   {userEmail?.[0]?.toUpperCase() || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{userEmail}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {userRole === 'admin' ? '🛡 Admin access' : '👁 Demo (read-only)'}
-                  </div>
+                  <div className="text-[10px] text-muted-foreground">{roleLabel}</div>
                 </div>
                 <button onClick={logout} className="text-[10px] text-muted-foreground hover:text-foreground">
                   Sign out
@@ -169,7 +212,7 @@ export function Sidebar() {
               Not signed in (mock)
             </Link>
           )}
-          <div className="mt-2 text-[10px] text-muted-foreground">v1.1 · MPA + roles</div>
+          <div className="mt-2 text-[10px] text-muted-foreground">v1.2 · 3 roles + plugins</div>
         </div>
       </aside>
     </>

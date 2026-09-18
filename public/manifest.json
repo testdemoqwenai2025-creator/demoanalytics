@@ -1,0 +1,45 @@
+{
+  "name": "MERIDIAN Data Analyst Template",
+  "short_name": "MERIDIAN",
+  "description": "A hyperscale data analyst template for capital markets. Live market data, RSS news feeds, file management, automation, and SLO monitoring.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "finance", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Open the synthetic tick lakehouse dashboard",
+      "url": "/dashboard"
+    },
+    {
+      "name": "Live Markets",
+      "short_name": "Markets",
+      "description": "View live crypto, FX, and equity data",
+      "url": "/markets"
+    },
+    {
+      "name": "Data Stories",
+      "short_name": "Stories",
+      "description": "Read auto-generated narrative briefs",
+      "url": "/stories"
+    }
+  ]
+}

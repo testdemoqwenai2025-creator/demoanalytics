@@ -29,8 +29,8 @@ interface DashboardState {
   // Mock auth with roles (persisted to localStorage)
   isAuthenticated: boolean
   userEmail: string | null
-  userRole: 'demo' | 'admin' | null
-  login: (email: string, role: 'demo' | 'admin') => void
+  userRole: 'demo' | 'admin' | 'enterprise' | null
+  login: (email: string, role: 'demo' | 'admin' | 'enterprise') => void
   logout: () => void
 
   // API keys (persisted to localStorage, never transmitted except to provider)
@@ -56,7 +56,7 @@ const AUTH_KEY = 'meridian-mock-auth'
 const API_KEYS_KEY = 'meridian-api-keys'
 const USAGE_KEY = 'meridian-api-usage'
 
-function loadAuth(): { isAuthenticated: boolean; userEmail: string | null; userRole: 'demo' | 'admin' | null } {
+function loadAuth(): { isAuthenticated: boolean; userEmail: string | null; userRole: 'demo' | 'admin' | 'enterprise' | null } {
   if (typeof window === 'undefined') return { isAuthenticated: false, userEmail: null, userRole: null }
   try {
     const raw = window.localStorage.getItem(AUTH_KEY)
@@ -70,7 +70,7 @@ function loadAuth(): { isAuthenticated: boolean; userEmail: string | null; userR
   } catch { return { isAuthenticated: false, userEmail: null, userRole: null } }
 }
 
-function saveAuth(isAuthenticated: boolean, userEmail: string | null, userRole: 'demo' | 'admin' | null) {
+function saveAuth(isAuthenticated: boolean, userEmail: string | null, userRole: 'demo' | 'admin' | 'enterprise' | null) {
   if (typeof window === 'undefined') return
   try { window.localStorage.setItem(AUTH_KEY, JSON.stringify({ isAuthenticated, userEmail, userRole })) } catch {}
 }

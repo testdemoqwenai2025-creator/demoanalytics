@@ -29,11 +29,15 @@ export function SiteFooter() {
             <ul className="space-y-1.5 text-xs">
               <li><Link href="/" className="text-muted-foreground hover:text-foreground">Home</Link></li>
               <li><Link href="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link></li>
+              <li><Link href="/layouts" className="text-muted-foreground hover:text-foreground">Saved Layouts</Link></li>
               <li><Link href="/markets" className="text-muted-foreground hover:text-foreground">Live Markets</Link></li>
+              <li><Link href="/live" className="text-muted-foreground hover:text-foreground">Live Updates</Link></li>
               <li><Link href="/news" className="text-muted-foreground hover:text-foreground">News Feeds</Link></li>
               <li><Link href="/files" className="text-muted-foreground hover:text-foreground">Files</Link></li>
+              <li><Link href="/exports" className="text-muted-foreground hover:text-foreground">Data Export</Link></li>
               <li><Link href="/stories" className="text-muted-foreground hover:text-foreground">Data Stories</Link></li>
               <li><Link href="/automate" className="text-muted-foreground hover:text-foreground">Automation</Link></li>
+              <li><Link href="/notifications" className="text-muted-foreground hover:text-foreground">Notifications</Link></li>
             </ul>
           </div>
 
@@ -43,9 +47,13 @@ export function SiteFooter() {
             <ul className="space-y-1.5 text-xs">
               <li><Link href="/about" className="text-muted-foreground hover:text-foreground">About</Link></li>
               <li><Link href="/docs" className="text-muted-foreground hover:text-foreground">Documentation</Link></li>
+              <li><Link href="/query-builder" className="text-muted-foreground hover:text-foreground">Query Builder</Link></li>
+              <li><Link href="/charts" className="text-muted-foreground hover:text-foreground">Chart Sync</Link></li>
               <li><Link href="/pricing" className="text-muted-foreground hover:text-foreground">Pricing &amp; Limits</Link></li>
               <li><Link href="/settings" className="text-muted-foreground hover:text-foreground">Settings</Link></li>
               <li><Link href="/login" className="text-muted-foreground hover:text-foreground">Login</Link></li>
+              <li><Link href="/plugins/weather" className="text-muted-foreground hover:text-foreground">Weather Plugin</Link></li>
+              <li><Link href="/plugins/flights" className="text-muted-foreground hover:text-foreground">Flights Plugin</Link></li>
               <li>
                 <a
                   href="https://github.com/testdemoqwenai2025-creator/demoanalytics"

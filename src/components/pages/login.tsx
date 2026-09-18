@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LogIn, Mail, Lock, Eye, EyeOff, Github, ArrowRight, User, ShieldCheck, Sparkles } from 'lucide-react'
+import { LogIn, Mail, Lock, Eye, EyeOff, Github, ArrowRight, User, ShieldCheck, Sparkles, Building2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,12 +11,14 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useDashboardStore } from '@/lib/store'
+import { authenticate, type Role } from '@/lib/auth'
 import { toast } from 'sonner'
 
 // Mock credentials (in production, these would be real OAuth accounts)
-const DEMO_CREDENTIALS = {
-  demo: { email: 'demo@meridian.template', password: 'demo', role: 'demo' as const },
-  admin: { email: 'admin@meridian.template', password: 'admin', role: 'admin' as const },
+const DEMO_CREDENTIALS: Record<Role, { email: string; password: string; role: Role }> = {
+  demo: { email: 'demo@meridian.template', password: 'demo', role: 'demo' },
+  admin: { email: 'admin@meridian.template', password: 'admin', role: 'admin' },
+  enterprise: { email: 'enterprise@meridian.template', password: 'enterprise', role: 'enterprise' },
 }
 
 export function LoginPage() {
@@ -44,27 +46,24 @@ export function LoginPage() {
     setLoading(true)
     await new Promise(r => setTimeout(r, 600))
 
-    // Check against mock credentials
-    const isDemo = email === DEMO_CREDENTIALS.demo.email && password === DEMO_CREDENTIALS.demo.password
-    const isAdmin = email === DEMO_CREDENTIALS.admin.email && password === DEMO_CREDENTIALS.admin.password
-
-    if (!isDemo && !isAdmin) {
+    // Use the real authenticate function from auth.ts
+    const user = authenticate(email, password)
+    if (!user) {
       setLoading(false)
-      setErrors({ password: 'Invalid credentials. Use demo@meridian.template/demo or admin@meridian.template/admin' })
+      setErrors({ password: 'Invalid credentials. Use demo@meridian.template/demo, admin@meridian.template/admin, or enterprise@meridian.template/enterprise' })
       return
     }
 
-    const role = isAdmin ? 'admin' : 'demo'
-    login(email, role)
+    login(user.email, user.role)
     setLoading(false)
 
-    toast.success(`Logged in as ${role}`, {
-      description: `Welcome, ${email}. Role: ${role.toUpperCase()}. No real credentials were transmitted.`,
+    toast.success(`Logged in as ${user.role}`, {
+      description: `Welcome, ${user.name}. Role: ${user.role.toUpperCase()}. No real credentials were transmitted.`,
     })
     router.push('/dashboard')
   }
 
-  const quickLogin = (role: 'demo' | 'admin') => {
+  const quickLogin = (role: Role) => {
     const creds = DEMO_CREDENTIALS[role]
     setEmail(creds.email)
     setPassword(creds.password)
@@ -73,7 +72,7 @@ export function LoginPage() {
       login(creds.email, role)
       setLoading(false)
       toast.success(`Logged in as ${role}`, {
-        description: `Quick ${role} login — explore ${role === 'admin' ? 'all features' : 'read-only dashboards'}.`,
+        description: `Quick ${role} login — explore ${role === 'enterprise' ? 'all features + user management + SSO' : role === 'admin' ? 'all features' : 'read-only dashboards'}.`,
       })
       router.push('/dashboard')
     }, 500)
@@ -91,20 +90,27 @@ export function LoginPage() {
         </div>
 
         {/* Quick login cards */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           <QuickLoginCard
             role="demo"
             icon={User}
             title="Demo"
-            description="Read-only dashboards, markets, news"
+            description="Read-only"
             onClick={() => quickLogin('demo')}
           />
           <QuickLoginCard
             role="admin"
             icon={ShieldCheck}
             title="Admin"
-            description="Full access: files, settings, audit"
+            description="Full access"
             onClick={() => quickLogin('admin')}
+          />
+          <QuickLoginCard
+            role="enterprise"
+            icon={Building2}
+            title="Enterprise"
+            description="Users + SSO"
+            onClick={() => quickLogin('enterprise')}
           />
         </div>
 
@@ -177,10 +183,11 @@ export function LoginPage() {
             <div className="flex items-start gap-2">
               <Sparkles className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
               <div className="text-[11px] space-y-1">
-                <div className="font-medium">Demo credentials:</div>
+                <div className="font-medium">Mock credentials (three roles):</div>
                 <div className="font-mono text-muted-foreground">
-                  <div>Demo:  <code className="bg-muted px-1 rounded">demo@meridian.template</code> / <code className="bg-muted px-1 rounded">demo</code></div>
-                  <div>Admin: <code className="bg-muted px-1 rounded">admin@meridian.template</code> / <code className="bg-muted px-1 rounded">admin</code></div>
+                  <div>Demo:       <code className="bg-muted px-1 rounded">demo@meridian.template</code> / <code className="bg-muted px-1 rounded">demo</code></div>
+                  <div>Admin:      <code className="bg-muted px-1 rounded">admin@meridian.template</code> / <code className="bg-muted px-1 rounded">admin</code></div>
+                  <div>Enterprise: <code className="bg-muted px-1 rounded">enterprise@meridian.template</code> / <code className="bg-muted px-1 rounded">enterprise</code></div>
                 </div>
               </div>
             </div>
@@ -205,7 +212,7 @@ export function LoginPage() {
 }
 
 function QuickLoginCard({ role, icon: Icon, title, description, onClick }: {
-  role: 'demo' | 'admin'
+  role: Role
   icon: React.ComponentType<{ className?: string }>
   title: string
   description: string
@@ -214,15 +221,16 @@ function QuickLoginCard({ role, icon: Icon, title, description, onClick }: {
   return (
     <button
       onClick={onClick}
-      className="text-left rounded-md border p-3 hover:border-primary hover:bg-accent/40 transition-colors group"
+      className="text-left rounded-md border p-2.5 hover:border-primary hover:bg-accent/40 transition-colors group"
     >
-      <div className="flex items-center gap-2 mb-1">
-        <div className={`flex h-7 w-7 items-center justify-center rounded-md ${
+      <div className="flex items-center gap-1.5 mb-1">
+        <div className={`flex h-6 w-6 items-center justify-center rounded-md ${
+          role === 'enterprise' ? 'bg-violet-500 text-white' :
           role === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
         }`}>
-          <Icon className="h-3.5 w-3.5" />
+          <Icon className="h-3 w-3" />
         </div>
-        <span className="text-sm font-semibold">{title}</span>
+        <span className="text-xs font-semibold">{title}</span>
       </div>
       <p className="text-[10px] text-muted-foreground leading-tight">{description}</p>
     </button>

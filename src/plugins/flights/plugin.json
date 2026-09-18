@@ -1,0 +1,13 @@
+{
+  "name": "flights",
+  "title": "Live Flights",
+  "description": "OpenSky flight tracking (sample plugin)",
+  "icon": "plane",
+  "category": "transportation",
+  "navOrder": 5.2,
+  "requiredRole": "demo",
+  "version": "1.0.0",
+  "author": "MERIDIAN Team",
+  "homepage": "https://github.com/testdemoqwenai2025-creator/dataanalysistemplate",
+  "enabled": true
+}
