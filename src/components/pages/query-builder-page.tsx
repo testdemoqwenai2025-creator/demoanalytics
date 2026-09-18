@@ -34,6 +34,7 @@ const TABLES: Record<string, any[]> = {
   alerts: SYNTHETIC_FALLBACK.alerts,
   models: SYNTHETIC_FALLBACK.mlModels,
   slos: SYNTHETIC_FALLBACK.slos,
+  incidents: SYNTHETIC_FALLBACK.incidents,
 }
 
 const OPERATORS: { value: FilterRule['operator']; label: string }[] = [
@@ -281,10 +282,10 @@ export function QueryBuilderPage() {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs font-medium">Sort by</label>
-                <Select value={query.sortColumn || ''} onValueChange={(v) => setQuery(q => ({ ...q, sortColumn: v }))}>
+                <Select value={query.sortColumn || 'none'} onValueChange={(v) => setQuery(q => ({ ...q, sortColumn: v === 'none' ? null : v }))}>
                   <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue placeholder="None" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="" className="text-xs">None</SelectItem>
+                    <SelectItem value="none" className="text-xs">None</SelectItem>
                     {allColumns.map(col => <SelectItem key={col} value={col} className="text-xs font-mono">{col}</SelectItem>)}
                   </SelectContent>
                 </Select>
